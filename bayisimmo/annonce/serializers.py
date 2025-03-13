@@ -4,7 +4,17 @@ class MediaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model=Media
-        fields=['id','photo']
+        fields=['id','photo','type']
+    def validate_photo(self, value):
+        """
+        Valide que la taille de l'image ne dépasse pas une certaine limite.
+        """
+        max_size = 3 * 1024 * 1024  
+
+        if value.size > max_size:
+            raise serializers.ValidationError("La taille de l'image ne doit pas dépasser 3 Mo.")
+
+        return value
 
     
 class AnnonceSerializer(serializers.ModelSerializer):

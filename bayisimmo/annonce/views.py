@@ -45,6 +45,9 @@ class AnnonceView(viewsets.ModelViewSet):
     def perform_create(self, serializer):
             serializer.save(creer_par=self.request.user)
 
-
+class MediaView(viewsets.ModelViewSet):
+    queryset=Media.objects.all()
+    serializer_class=MediaSerializer
+    permission_classes=[IsAnnonceurOrReadOnly]
 
 
