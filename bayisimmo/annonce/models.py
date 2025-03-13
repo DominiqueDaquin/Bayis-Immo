@@ -37,8 +37,8 @@ class Annonce(models.Model):
     creer_le=models.DateTimeField(auto_now_add=True)
     creer_par=models.ForeignKey(get_user_model(),on_delete=models.CASCADE)
     status=models.CharField(max_length=1,choices=CHOICES,default='p')
-    photos=models.ManyToManyField(Media)
-    note = models.DecimalField(max_digits=3, decimal_places=1, validators=[MinValueValidator(0), MaxValueValidator(5)])
+    photos=models.ManyToManyField(Media,blank=True,null=True)
+    note = models.DecimalField(max_digits=3, decimal_places=1, validators=[MinValueValidator(0), MaxValueValidator(5)],default=0.0)
 
     class Meta:
         verbose_name='Annonce'
