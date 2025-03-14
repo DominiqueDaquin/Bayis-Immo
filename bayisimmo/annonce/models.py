@@ -4,6 +4,11 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from datetime import timedelta
 
+
+
+
+
+
 class Media(models.Model):
     """ Un média représente tout ce qui est photo ou vidéo attaché à une annonce """
     TYPE_CHOICES = [
@@ -38,7 +43,7 @@ class Annonce(models.Model):
     creer_par=models.ForeignKey(get_user_model(),on_delete=models.CASCADE)
     status=models.CharField(max_length=1,choices=CHOICES,default='p')
     photos=models.ManyToManyField(Media,blank=True,null=True)
-    note = models.DecimalField(max_digits=3, decimal_places=1, validators=[MinValueValidator(0), MaxValueValidator(5)],default=0.0)
+    
 
     class Meta:
         verbose_name='Annonce'
@@ -60,6 +65,7 @@ class Message(models.Model):
     texte=models.TextField()
     envoyer_le=models.DateTimeField(auto_now_add=True)
     status=models.CharField(max_length=1,choices=CHOICES,default='e')
+    destinataire=models.ForeignKey(get_user_model(),on_delete=models.CASCADE)
 
     def temps_ecoule(self):
         """
@@ -89,6 +95,7 @@ class Message(models.Model):
     class Meta:
         verbose_name='Message'
         verbose_name_plural='Messages'
+        
     
     def __str__(self):
         return f'message {self.id}'
@@ -101,4 +108,47 @@ class Discussion(models.Model):
     messages = models.ManyToManyField(Message)
 
 
+class AnnonceFavoris(models.Model):
+    user=models.ForeignKey(get_user_model(),on_delete=models.CASCADE)
+    annonce=models.ForeignKey(Annonce,on_delete=models.CASCADE)
 
+    class Meta:
+        verbose_name='Annonce favorie'
+        verbose_name_plural='Annonces Favories'
+        unique_together=['user','annonce']
+
+
+class Note(models.Model):
+    valeur = models.DecimalField(max_digits=3, decimal_places=1, validators=[MinValueValidator(0), MaxValueValidator(5)],default=0.0)
+    user=models.ForeignKey(get_user_model(),on_delete=models.CASCADE)
+    article=models.ForeignKey(Annonce,on_delete=models.CASCADE)
+    
+
+    class Meta:
+        verbose_name='Note'
+        verbose_name_plural='Notes'
+        unique_together=['user','article']
+
+    @property
+    def moyenne(self):
+        annonces=Annonce.objects.filter(pk=self.annonce.id)
+        somme=0.0
+        for annonce in annonces:
+            somme=annonce.valeur+somme
+        
+        moyenne= somme / len(list(annonces))
+        return moyenne
+
+
+class Commentaire(models.Model):
+    user=models.ForeignKey(get_user_model(),on_delete=models.CASCADE)
+    annonce=models.ForeignKey(Annonce,on_delete=models.CASCADE,null=True,blank=True)
+    commentaire=models.ForeignKey("Commentaire",on_delete=models.CASCADE,null=True,blank=True)
+    texte=models.TextField()
+
+
+class Tombola(models.Model):
+    user=models.ForeignKey(get_user_model(),on_delete=models.CASCADE)
+    titre=models.CharField(max_length=255)
+    photo=models.ImageField()
+    is_active=models.BooleanField(default=True)
