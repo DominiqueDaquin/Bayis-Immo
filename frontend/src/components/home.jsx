@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react";
 import {
   Box,
   Container,
@@ -25,141 +25,87 @@ import {
   Avatar,
   Badge,
   Button,
-  InputGroup,
-  InputLeftElement,
-  InputRightElement,
-  AbsoluteCenter,
-} from "@chakra-ui/react"
-import { FaHeart, FaRegHeart, FaThLarge, FaThList, FaEllipsisH, FaCommentAlt, FaFilter, FaSearch } from "react-icons/fa"
-import { StarIcon } from "@chakra-ui/icons"
-import SimpleNavbar from "./partials/navbar"
+  useToast,
+} from "@chakra-ui/react";
+import { FaHeart, FaRegHeart, FaThLarge, FaEllipsisH, FaCommentAlt, FaFilter } from "react-icons/fa";
+import { StarIcon } from "@chakra-ui/icons";
+import SimpleNavbar from "./partials/navbar";
+import axiosInstance from "@/api/axios"; // Assurez-vous que le chemin est correct
 
-const properties = [
-  {
-    id: 1,
-    title: "Appartement meublé (Douala)",
-    price: 50000,
-    image: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8YXBhcnRtZW50fGVufDB8fDB8fHww&auto=format&fit=crop&w=500&q=60",
-    rating: 4,
-    reviews: 120,
-  },
-  {
-    id: 2,
-    title: "Bureau à louer (large espace)",
-    price: 100000,
-    image: "https://images.unsplash.com/photo-1497366754035-f200968a6e72?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8b2ZmaWNlfGVufDB8fDB8fHww&auto=format&fit=crop&w=500&q=60",
-    rating: 4.5,
-    reviews: 85,
-  },
-  {
-    id: 3,
-    title: "Immeuble à louer",
-    price: 60000,
-    image: "https://images.unsplash.com/photo-1460317442991-0ec209397118?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8YnVpbGRpbmd8ZW58MHx8MHx8fDA%3D&auto=format&fit=crop&w=500&q=60",
-    rating: 3.5,
-    reviews: 42,
-  },
-  {
-    id: 4,
-    title: "Studio pour tournage à louer",
-    price: 200000,
-    image: "https://images.unsplash.com/photo-1598550476439-6847785fcea6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8c3R1ZGlvfGVufDB8fDB8fHww&auto=format&fit=crop&w=500&q=60",
-    rating: 4,
-    reviews: 150,
-  },
-  {
-    id: 5,
-    title: "Salle de fête",
-    price: 300000,
-    image: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8ZXZlbnQlMjBoYWxsfGVufDB8fDB8fHww&auto=format&fit=crop&w=500&q=60",
-    rating: 5,
-    reviews: 90,
-  },
-  {
-    id: 6,
-    title: "Terrain à vendre",
-    price: 15000000,
-    image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8bGFuZHxlbnwwfHwwfHx8MA%3D%3D&auto=format&fit=crop&w=500&q=60",
-    rating: 4,
-    reviews: 102,
-  },
-]
-
-
+const baseUrl='http://127.0.0.1:8000'
 
 const Pagination = ({ currentPage, totalPages, onPageChange }) => (
   <HStack spacing={2} mt={8} justify="center" flexWrap="wrap">
-    <Button 
-      onClick={() => onPageChange(currentPage - 1)} 
+    <Button
+      onClick={() => onPageChange(currentPage - 1)}
       isDisabled={currentPage === 1}
       size="sm"
     >
       Précédent
     </Button>
-    
+
     {Array.from({ length: totalPages }, (_, i) => (
       <Button
         key={i + 1}
         onClick={() => onPageChange(i + 1)}
-        colorScheme={currentPage === i + 1 ? 'blue' : 'gray'}
+        colorScheme={currentPage === i + 1 ? "blue" : "gray"}
         size="sm"
       >
         {i + 1}
       </Button>
     ))}
-    
-    <Button 
-      onClick={() => onPageChange(currentPage + 1)} 
+
+    <Button
+      onClick={() => onPageChange(currentPage + 1)}
       isDisabled={currentPage === totalPages}
       size="sm"
     >
       Suivant
     </Button>
   </HStack>
-)
+);
 
 const HeroBanner = () => (
-  <Box 
+  <Box
     bgImage="url('https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80')"
     bgPosition="center"
     bgSize="cover"
     h={{ base: "300px", md: "400px" }}
     position="relative"
   >
-    <Box bg="blackAlpha.600" h="full" w="full">
-      
-    </Box>
+    <Box bg="blackAlpha.600" h="full" w="full"></Box>
   </Box>
-)
+);
 
 const Rating = ({ rating, reviews }) => (
   <HStack spacing={1}>
     {Array(5).fill("").map((_, i) => (
-      <StarIcon 
-        key={i} 
-        color={i < Math.floor(rating) ? "yellow.400" : "gray.300"} 
-        boxSize={4} 
+      <StarIcon
+        key={i}
+        color={i < Math.floor(rating) ? "yellow.400" : "gray.300"}
+        boxSize={4}
       />
     ))}
     <Text fontSize="sm" color="gray.500">({reviews} avis)</Text>
   </HStack>
-)
+);
 
 const PropertyCard = ({ property, isFavorite, onToggleFavorite }) => {
-  const hoverEffect = useColorModeValue("shadow-lg", "dark-shadow")
-  
+  const hoverEffect = useColorModeValue("shadow-lg", "dark-shadow");
+
   return (
-    <Card 
-      maxW="sm" 
-      borderRadius="xl" 
-      overflow="hidden" 
+    <Card
+      maxW="sm"
+      borderRadius="xl"
+      overflow="hidden"
       transition="all 0.2s"
       _hover={{ transform: "translateY(-4px)", shadow: "md" }}
     >
       <Box position="relative">
+        {()=>console.log("photo",property.photos[0]?.url )}
         <Image
-          src={property.image}
-          alt={property.title}
+          src={`${baseUrl}${property.photos[0]?.photo || "https://via.placeholder.com/300"}`}// Utilisez la première photo ou une image par défaut
+          alt={property.titre}
           height={{ base: "200px", md: "240px" }}
           width="100%"
           objectFit="cover"
@@ -184,22 +130,21 @@ const PropertyCard = ({ property, isFavorite, onToggleFavorite }) => {
           py={1}
           borderRadius="md"
         >
-          Nouveau
+          {property.status === "a" ? "Approuvé" : "En attente"}
         </Badge>
       </Box>
       <CardBody>
         <VStack align="start" spacing={2}>
           <Text fontWeight="bold" fontSize="lg" noOfLines={1}>
-            {property.title}
+            {property.titre}
           </Text>
           <Text fontSize="xl" fontWeight="black" color="blue.800">
-            XAF {property.price.toLocaleString()}
-            <Text as="span" fontSize="sm" color="gray.500" fontWeight="normal">/mois</Text>
+            XAF {property.prix?.toLocaleString() || "N/A"}
           </Text>
-          <Rating rating={property.rating} reviews={property.reviews} />
+          <Rating rating={property.moyenne || 0} reviews={property.nb_avis || 0} />
           <HStack spacing={2} w="full" pt={2}>
-            <Avatar size="sm" src="https://bit.ly/dan-abramov" />
-            <Text fontSize="sm" color="gray.600">Agence XYZ</Text>
+            <Avatar size="sm" src={property.creer_par?.avatar || "https://bit.ly/dan-abramov"} />
+            <Text fontSize="sm" color="gray.600">{property.creer_par?.name || "Anonyme"}</Text>
             <Button size="sm" ml="auto" colorScheme="blue" variant="outline">
               Contacter
             </Button>
@@ -207,69 +152,95 @@ const PropertyCard = ({ property, isFavorite, onToggleFavorite }) => {
         </VStack>
       </CardBody>
     </Card>
-  )
-}
+  );
+};
 
 export default function Home() {
-  const [currentPage, setCurrentPage] = useState(1)
-  const [favorites, setFavorites] = useState([])
+  const [currentPage, setCurrentPage] = useState(1);
+  const [favorites, setFavorites] = useState([]);
   const [categories, setCategories] = useState({
     terrain: false,
     appartements: false,
     bureau: false,
     autres: false,
-  })
-  
-  const itemsPerPage = 6
-  const totalPages = Math.ceil(properties.length / itemsPerPage)
-  const paginatedProperties = properties.slice(
+  });
+  const [annonces, setAnnonces] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const toast = useToast();
+
+  const itemsPerPage = 6;
+  const totalPages = Math.ceil(annonces.length / itemsPerPage);
+  const paginatedProperties = annonces.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
-  )
+  );
+
+  // Récupérer les annonces depuis l'API
+  useEffect(() => {
+    const fetchAnnonces = async () => {
+      try {
+        const response = await axiosInstance.get("/api/annonces");
+        console.log(response);
+        
+        setAnnonces(response.data);
+      } catch (error) {
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger les annonces. Veuillez réessayer.",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAnnonces();
+  }, [toast]);
 
   const handleToggleFavorite = (id) => {
-    setFavorites(prev => 
-      prev.includes(id) ? prev.filter(favId => favId !== id) : [...prev, id]
-    )
-  }
+    setFavorites((prev) =>
+      prev.includes(id) ? prev.filter((favId) => favId !== id) : [...prev, id]
+    );
+  };
 
   const handleCategoryChange = (category) => {
-    setCategories(prev => ({
+    setCategories((prev) => ({
       ...prev,
-      [category]: !prev[category]
-    }))
+      [category]: !prev[category],
+    }));
+  };
+
+  if (loading) {
+    return (
+      <Box textAlign="center" py={10}>
+        <Text>Chargement des annonces...</Text>
+      </Box>
+    );
   }
 
   return (
     <Box bg="gray.50" minH="100vh">
       <SimpleNavbar />
-      
+
       <HeroBanner />
-      
+
       <Container maxW="container.xl" py={8} mt={{ base: "-40px", md: "24" }} position="relative" zIndex={1}>
         <Flex justify="space-between" mb={8} direction={{ base: "column", md: "row" }} gap={4}>
           <Heading as="h1" size="lg" display="flex" alignItems="center">
-            <Text as="span" color="blue.600">{properties.length}</Text>
+            <Text as="span" color="blue.600">{annonces.length}</Text>
             <Text as="span" ml={2}>Résultats trouvés</Text>
           </Heading>
-          
+
           <HStack spacing={4}>
-            <Select
-              placeholder="Trier par"
-              width="200px"
-              variant="filled"
-              icon={<FaFilter />}
-            >
+            <Select placeholder="Trier par" width="200px" variant="filled" icon={<FaFilter />}>
               <option value="featured">En vedette</option>
               <option value="price-asc">Prix croissant</option>
               <option value="price-desc">Prix décroissant</option>
               <option value="rating">Meilleures notes</option>
             </Select>
-            <Button
-              leftIcon={<FaThLarge />}
-              variant="solid"
-              onClick={() => setViewMode("grid")}
-            >
+            <Button leftIcon={<FaThLarge />} variant="solid">
               Grille
             </Button>
           </HStack>
@@ -298,29 +269,29 @@ export default function Home() {
               <FormControl>
                 <FormLabel fontWeight="bold">Catégories</FormLabel>
                 <VStack align="start" spacing={3}>
-                  <Checkbox 
-                    colorScheme="blue" 
+                  <Checkbox
+                    colorScheme="blue"
                     isChecked={categories.terrain}
                     onChange={() => handleCategoryChange("terrain")}
                   >
                     Terrains
                   </Checkbox>
-                  <Checkbox 
-                    colorScheme="blue" 
+                  <Checkbox
+                    colorScheme="blue"
                     isChecked={categories.appartements}
                     onChange={() => handleCategoryChange("appartements")}
                   >
                     Appartements
                   </Checkbox>
-                  <Checkbox 
-                    colorScheme="blue" 
+                  <Checkbox
+                    colorScheme="blue"
                     isChecked={categories.bureau}
                     onChange={() => handleCategoryChange("bureau")}
                   >
                     Bureaux
                   </Checkbox>
-                  <Checkbox 
-                    colorScheme="blue" 
+                  <Checkbox
+                    colorScheme="blue"
                     isChecked={categories.autres}
                     onChange={() => handleCategoryChange("autres")}
                   >
@@ -351,7 +322,7 @@ export default function Home() {
               templateColumns={{
                 base: "1fr",
                 sm: "repeat(2, 1fr)",
-                lg: "repeat(3, 1fr)"
+                lg: "repeat(3, 1fr)",
               }}
               gap={6}
             >
@@ -365,10 +336,10 @@ export default function Home() {
                 </GridItem>
               ))}
             </Grid>
-            <Pagination 
-              currentPage={currentPage} 
-              totalPages={totalPages} 
-              onPageChange={setCurrentPage} 
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
             />
           </Box>
         </Flex>
@@ -381,12 +352,12 @@ export default function Home() {
             bottom="8"
             right="8"
             colorScheme="blue"
-            size="lg"maxW="container.xl"
+            size="lg"
             borderRadius="full"
             boxShadow="xl"
           />
         </Tooltip>
       </Container>
     </Box>
-  )
+  );
 }

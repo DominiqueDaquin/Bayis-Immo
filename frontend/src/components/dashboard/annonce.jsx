@@ -286,49 +286,19 @@ const PropertyForm = ({ property, onSubmit, onCancel }) => {
                   placeholder="Ex: 250000"
                 />
               </NumberInput>
-              <InputRightAddon children="€" />
+              <InputRightAddon children="Fcfa" />
             </InputGroup>
           </FormControl>
 
-          <FormControl isRequired>
-            <FormLabel>Surface</FormLabel>
-            <InputGroup>
-              <NumberInput w="full">
-                <NumberInputField
-                  name="surface"
-                  value={formData.surface}
-                  onChange={handleChange}
-                  placeholder="Ex: 120"
-                />
-              </NumberInput>
-              <InputRightAddon children="m²" />
-            </InputGroup>
-          </FormControl>
+
         </SimpleGrid>
 
         <FormControl isRequired>
           <FormLabel>Localisation</FormLabel>
-          <Input name="location" value={formData.location} onChange={handleChange} placeholder="Ex: Bordeaux" />
+          <Input name="location" value={formData.location} onChange={handleChange} placeholder="Ex: Ange raphel" />
         </FormControl>
 
-        <FormControl isRequired>
-          <FormLabel>Statut</FormLabel>
-          <Select name="status" value={formData.status} onChange={handleChange}>
-            <option value="active">Actif</option>
-            <option value="pending">En attente</option>
-            <option value="sold">Vendu</option>
-          </Select>
-        </FormControl>
 
-        <FormControl>
-          <FormLabel>Caractéristiques (séparées par des virgules)</FormLabel>
-          <Input
-            name="features"
-            value={formData.features.join(", ")}
-            onChange={handleFeatureChange}
-            placeholder="Ex: 3 chambres, 2 SDB, Jardin"
-          />
-        </FormControl>
 
         <FormControl>
           <FormLabel>Images</FormLabel>

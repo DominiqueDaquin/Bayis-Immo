@@ -62,7 +62,7 @@ export default function SimpleNavbar() {
                 textDecoration: "none",
                 bg: hoverBgColor,
               }}
-              href={"#"}
+              href={"/favorites"}
             >
               Favoris
             </Link>
