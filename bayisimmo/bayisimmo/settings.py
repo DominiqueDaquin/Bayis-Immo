@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-hkjq94t!7+z7(hytbt)67k=ge6ggd(j-g@4uaqg0aey$80d*(#
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'djoser',
+    'corsheaders',
+    'drf_spectacular',
     #'phonenumber_field',
 
     #installed app
@@ -50,6 +52,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',  
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -139,13 +142,15 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 REST_FRAMEWORK={
     'DEFAULT_AUTHENTICATION_CLASSES':[
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    ]
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 DJOSER={
     'LOGIN_FIELD':'email',
     'SERIALIZERS': {
-        'user_create': 'authentification.serializers.UserCreateSerializer',
+        'user_create': 'authentification.serializers.UserRegistrationSerializer',
         'user': 'authentification.serializers.UserSerializer',
         'user_update': 'authentification.serializers.UserUpdateSerializer',
     },
@@ -157,3 +162,37 @@ SIMPLE_JWT={
     'ROTATE_REFRESH_TOKEN':True,
     'BLACKLIST_AFTER_ROTATION':True
 }
+
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    CORS_ALLOWED_ORIGINS = [
+    "https://mon-site-front.com",  
+    ]
+
+CORS_ALLOW_CREDENTIALS = True
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Mon API',
+    'DESCRIPTION': 'Documentation détaillée de mon API.',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,  # Ne pas inclure de schéma dans l'interface de l'API
+}
+
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'handlers': {
+#         'console': {
+#             'level': 'DEBUG',
+#             'class': 'logging.StreamHandler',
+#         },
+#     },
+#     'loggers': {
+#         'django': {
+#             'handlers': ['console'],
+#             'level': 'DEBUG',
+#             'propagate': True,
+#         },
+#     },
+# }

@@ -3,12 +3,10 @@ from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from datetime import timedelta
+from django.core.exceptions import ValidationError
+from django.utils.timezone import now
 
-
-
-
-
-
+User=get_user_model()
 class Media(models.Model):
     """ Un média représente tout ce qui est photo ou vidéo attaché à une annonce """
     TYPE_CHOICES = [
@@ -42,16 +40,35 @@ class Annonce(models.Model):
     creer_le=models.DateTimeField(auto_now_add=True)
     creer_par=models.ForeignKey(get_user_model(),on_delete=models.CASCADE)
     status=models.CharField(max_length=1,choices=CHOICES,default='p')
-    photos=models.ManyToManyField(Media,blank=True,null=True)
-    
+    photos=models.ManyToManyField(Media)
+    notes=models.ManyToManyField(get_user_model(),
+                                 through='Note',
+                                 related_name='notes'
+
+                                 )
+    localisation=models.CharField(max_length=255,default='Akwa Soudanaise')
+    prix=models.DecimalField(max_digits=10,decimal_places=2,default=0.0)
 
     class Meta:
         verbose_name='Annonce'
         verbose_name_plural='Annonces'
+        ordering=["-creer_le"]
+
+    def nombre_vues(self):
+        """
+        Retourne le nombre total de vues de cette annonce.
+        """
+        return self.vues.count()
 
     def __str__(self):
         return f"{self.titre}"
 
+class Discussion(models.Model):
+    """ une discussion correspond a une conversation demarrer en 2 personnes"""
+    creer_le=models.DateTimeField(auto_now_add=True)
+    createur1=models.ForeignKey(get_user_model(),on_delete=models.SET_NULL,null=True,related_name="discussions_initiees")
+    createur2=models.ForeignKey(get_user_model(),on_delete=models.SET_NULL,null=True,related_name="discussion_recues")
+    
 
 class Message(models.Model):
     """ Message pour les discussions  """
@@ -66,6 +83,7 @@ class Message(models.Model):
     envoyer_le=models.DateTimeField(auto_now_add=True)
     status=models.CharField(max_length=1,choices=CHOICES,default='e')
     destinataire=models.ForeignKey(get_user_model(),on_delete=models.CASCADE)
+    discussion=models.ForeignKey(Discussion,on_delete=models.CASCADE,related_name="messages")
 
     def temps_ecoule(self):
         """
@@ -89,23 +107,23 @@ class Message(models.Model):
             mois = difference.days // 30
             return f"Il y a {mois} mois"
 
+    def clean(self):
+        """ Vérifie que le destinataire est bien l'un des deux créateurs de la discussion """
+        if self.destinataire not in [self.discussion.createur1, self.discussion.createur2]:
+            raise ValidationError("Le destinataire doit être l'un des créateurs de la discussion.")
+        
     def __str__(self):
         return f"Message de {self.envoyer_le} : {self.texte[:50]}..."
 
     class Meta:
         verbose_name='Message'
         verbose_name_plural='Messages'
+        ordering=["-envoyer_le"]
         
     
     def __str__(self):
         return f'message {self.id}'
     
-class Discussion(models.Model):
-    """ une discussion correspond a une conversation demarrer en 2 personnes"""
-    creer_le=models.DateTimeField(auto_now_add=True)
-    createur1=models.ForeignKey(get_user_model(),on_delete=models.SET_NULL,null=True,related_name="discussions_initiees")
-    createur2=models.ForeignKey(get_user_model(),on_delete=models.SET_NULL,null=True,related_name="discussion_recues")
-    messages = models.ManyToManyField(Message)
 
 
 class AnnonceFavoris(models.Model):
@@ -116,35 +134,56 @@ class AnnonceFavoris(models.Model):
         verbose_name='Annonce favorie'
         verbose_name_plural='Annonces Favories'
         unique_together=['user','annonce']
+    
+    def __str__(self):
+        return f"{self.user} - annonce : {self.annonce.titre}"
 
 
 class Note(models.Model):
     valeur = models.DecimalField(max_digits=3, decimal_places=1, validators=[MinValueValidator(0), MaxValueValidator(5)],default=0.0)
     user=models.ForeignKey(get_user_model(),on_delete=models.CASCADE)
-    article=models.ForeignKey(Annonce,on_delete=models.CASCADE)
+    annonce=models.ForeignKey(Annonce,on_delete=models.CASCADE)
     
-
     class Meta:
         verbose_name='Note'
         verbose_name_plural='Notes'
-        unique_together=['user','article']
+        unique_together=['user','annonce']
 
     @property
     def moyenne(self):
-        annonces=Annonce.objects.filter(pk=self.annonce.id)
-        somme=0.0
-        for annonce in annonces:
-            somme=annonce.valeur+somme
+        notes=Note.objects.filter(annonce=self.annonce)
+        somme=0
+        for note in list(notes):
+            somme=note.valeur+somme
         
-        moyenne= somme / len(list(annonces))
+        moyenne= somme / len(list(note))
         return moyenne
+    
+
+
+class Vue(models.Model):
+    """
+    Ce modèle stocke les vues d'un article par utilisateur.
+    """
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
+    annonce = models.ForeignKey("Annonce", on_delete=models.CASCADE, related_name="vues")
+    date_vue = models.DateTimeField(auto_now_add=True)  
+
+    class Meta:
+        unique_together = ('user', 'annonce')  
+
+    def __str__(self):
+        return f"{self.user} a vu {self.article}"
 
 
 class Commentaire(models.Model):
-    user=models.ForeignKey(get_user_model(),on_delete=models.CASCADE)
-    annonce=models.ForeignKey(Annonce,on_delete=models.CASCADE,null=True,blank=True)
-    commentaire=models.ForeignKey("Commentaire",on_delete=models.CASCADE,null=True,blank=True)
-    texte=models.TextField()
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
+    annonce = models.ForeignKey(Annonce, on_delete=models.CASCADE, null=True, blank=True)
+    parent_commentaire = models.ForeignKey(
+        "Commentaire", on_delete=models.CASCADE, null=True, blank=True, related_name="reponses"
+    )
+    texte = models.TextField()
+    creer_le=models.DateTimeField(auto_now_add=True)
 
 
 class Tombola(models.Model):
@@ -152,3 +191,68 @@ class Tombola(models.Model):
     titre=models.CharField(max_length=255)
     photo=models.ImageField()
     is_active=models.BooleanField(default=True)
+
+
+class Tombola(models.Model):
+    STATUS_CHOICES = [
+        ('a', 'Active'),
+        ('p', 'En attente'),
+        ('f', 'Terminée'),
+    ]
+
+    photo = models.ImageField(upload_to='tombola_photos/', blank=True, null=True)
+    titre = models.CharField(max_length=200)
+    cagnotte = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0.00,
+        help_text="Montant de la cagnotte (en euros, FCFA, etc.)"
+    )
+    participants_actuel = models.PositiveIntegerField(default=0)
+    statut = models.CharField(
+        max_length=1,
+        choices=STATUS_CHOICES,
+        default='p'
+    )
+    date_fin = models.DateField(null=True,blank=True)
+    participants = models.ManyToManyField(
+        get_user_model(), 
+        related_name="tombolas",
+        through='UserTombola',
+        blank=True
+    )
+    createur=models.ForeignKey(get_user_model(),on_delete=models.CASCADE)
+    
+
+    def __str__(self):
+        return self.titre
+    
+
+class UserTombola(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    tombola = models.ForeignKey("Tombola", on_delete=models.CASCADE)
+    date_participation = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'tombola')
+
+    def __str__(self):
+        return f"{self.user.username} - {self.tombola.titre}"
+    
+
+class Notification(models.Model):
+    CHOICES=[
+        ('a','alerte'),
+        ('c','critique'),
+        ('d','default')
+    ]
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, related_name="notifications")
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(default=now)
+    is_important=models.BooleanField(default=False)
+    is_archived=models.BooleanField(default=False)
+    type=models.CharField(max_length=1,choices=CHOICES,default='d')
+
+    def __str__(self):
+        return f"{self.user} - {self.message[:50]}"

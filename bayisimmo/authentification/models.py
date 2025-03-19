@@ -33,7 +33,7 @@ class User(AbstractUser):
         verbose_name_plural='Utilisateurs'
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS=['phone','name']
+    REQUIRED_FIELDS=[]
     objects = UserManager()
     def __str__(self):
-        return f'{self.name} -{self.id}'
+        return f'{self.name}'

@@ -1,10 +1,18 @@
 from rest_framework import serializers
-from .models import Media,Annonce,Message,Discussion,AnnonceFavoris,Note
+from .models import Media,Annonce,Message,Discussion,AnnonceFavoris,Note,Tombola,Commentaire,Vue
+from django.contrib.auth import get_user_model
+from .models import Notification
+User=get_user_model()
 class MediaSerializer(serializers.ModelSerializer):
-
+    photo=serializers.SerializerMethodField()
     class Meta:
         model=Media
         fields=['id','photo','type']
+
+    def get_photo(self,obj):
+        return obj.photo.url
+
+
     def validate_photo(self, value):
         """
         Valide que la taille de l'image ne dépasse pas une certaine limite.
@@ -24,52 +32,57 @@ class AnnonceSerializer(serializers.ModelSerializer):
         read_only=True,
         slug_field="name"
     )
+    photos = MediaSerializer(many=True, read_only=True)
+    #mes_vues=serializers.SerializerMethodField()
     class Meta:
         model=Annonce
-        fields=['id','titre','description','creer_le','creer_par','status','photos']
+        fields=['id','titre','description','creer_le','creer_par','status','photos','localisation','prix','vues']
+        read_only_fields=['vues']
+
+    
+    # def get_mes_vues(self,obj):
+    #     return obj.nombre_vues
 
 
 class MessageSerializer(serializers.ModelSerializer):
-    destinataire=serializers.SlugRelatedField(
-        read_only=True,
-        slug_field="name"
-    )
+
     class Meta:
         model=Message
-        fields=['id','text','envoyer_le','temps_ecoule','status','destinataire']
+        fields=['id','texte','envoyer_le','temps_ecoule','status','destinataire','discussion']
 
     def get_temps_ecoule(self,obj):
         return obj.temps_ecoule()
     
 class DiscussionSerializer(serializers.ModelSerializer):
-
-    createur1=serializers.SlugRelatedField(
-        read_only=True,
-        slug_field="name",
-        
-    )
-    createur2=serializers.SlugRelatedField(
-        read_only=True,
-        slug_field="name",
-        
-    )
+    name1 = serializers.SerializerMethodField()
+    name2 = serializers.SerializerMethodField()
+    last_message=serializers.SerializerMethodField()
     messages=serializers.SlugRelatedField(
         read_only=True,
-        slug_field="name",
+        slug_field="texte",
         many=True
         
     )
     class Meta:
         model=Discussion
-        fields=['id','creer_le','createur1','createur2','messages']
+        fields=['id','creer_le','createur1','createur2','messages','name1','name2','last_message']
+
+    def get_name1(self, obj):
+        return obj.createur1.name if obj.createur1 else None
+
+
+    def get_name2(self, obj):
+        return obj.createur2.name if obj.createur2 else None
+    
+    def get_last_message(self, obj):
+        # Assurez-vous d'avoir une relation 'messages' dans Discussion
+        last_message = obj.messages.order_by('-envoyer_le').first()  # Trie par 'envoyer_le' pour récupérer le dernier
+        return last_message.texte if last_message else None
 
 
 class AnnonceFavorisSerializer(serializers.ModelSerializer):
 
-    annonce=serializers.SlugRelatedField(
-        read_only=True,
-        slug_name="titre"
-    )
+    
 
     class Meta:
         model=AnnonceFavoris
@@ -84,3 +97,56 @@ class NoteSerializer(serializers.ModelSerializer):
 
     def get_moyenne(self,obj):
         return obj.moyenne
+    
+
+class TombolaSerializer(serializers.ModelSerializer):
+    participants = serializers.PrimaryKeyRelatedField(
+        many=True, queryset=User.objects.all(), required=False
+    )
+    statut_display = serializers.CharField(source='get_statut_display', read_only=True)
+
+    class Meta:
+        model = Tombola
+        fields = [
+            'id', 'titre', 'cagnotte', 'participants_actuel', 'statut', 'statut_display', 
+            'date_fin', 'participants','photo','createur'
+        ]
+        read_only_fields = ['participants_actuel']
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ['id','user','message','is_read','created_at','is_important','is_archived','type']
+
+class CommentaireSerializer(serializers.ModelSerializer):
+    user = serializers.StringRelatedField(read_only=True)  
+    reponses = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    commentaire_parent = serializers.SerializerMethodField()  # Champ pour récupérer le texte du commentaire parent
+
+    class Meta:
+        model = Commentaire
+        fields = ["id", "user", "annonce", "parent_commentaire", "texte", "reponses", "commentaire_parent", "creer_le"]
+        extra_kwargs = {
+            "parent_commentaire": {"allow_null": True, "required": False},
+            "annonce": {"allow_null": True, "required": False},
+        }
+
+    def get_commentaire_parent(self, obj):
+        """
+        Récupère le texte du commentaire parent s'il existe, sinon retourne None.
+        """
+        if obj.parent_commentaire:
+            return obj.parent_commentaire.texte
+        return None
+
+class VueSerializer(serializers.ModelSerializer):
+    """
+    Serializer pour le modèle Vue.
+    Permet de créer une vue.
+    """
+
+    class Meta:
+        model = Vue
+        fields = ['annonce','user']  
+        
