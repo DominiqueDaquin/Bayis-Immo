@@ -12,22 +12,23 @@ import { ProtectedRoute } from './components/others/protected-route';
 import ParametresUtilisateur from './components/pages/parametres';
 import NotificationPage from './components/pages/notifications';
 import Messagerie from './components/pages/messages';
+
 function App() {
     return (
         <AuthProvider>
-            <Router>
+            <Router basename="/Bayis-Immo">
                 <Routes>
                     {/* Routes publiques */}
                     <Route path="/" element={<SignupForm />} />
                     <Route path="/login" element={<LoginForm />} />
-                       <Route path="/annonce" element={<Home />} />
-                       <Route path="/detail-annonce/:id" element={<DetailAnnonce />} />
-                       <Route path="/favorites" element={<FavoritesPage />} />
-                      <Route path="/tombolas" element={<TombolaListing />} />
-                      <Route path="/settings" element={<ProfileSettings />} />
-                      <Route path="/parametres" element={<ParametresUtilisateur />} />
-                      <Route path="/notifications" element={<NotificationPage />} />
-                      <Route path="/messages" element={<Messagerie />} />
+                    <Route path="/annonce" element={<Home />} />
+                    <Route path="/detail-annonce/:id" element={<DetailAnnonce />} />
+                    <Route path="/favorites" element={<FavoritesPage />} />
+                    <Route path="/tombolas" element={<TombolaListing />} />
+                    <Route path="/settings" element={<ProfileSettings />} />
+                    <Route path="/parametres" element={<ParametresUtilisateur />} />
+                    <Route path="/notifications" element={<NotificationPage />} />
+                    <Route path="/messages" element={<Messagerie />} />
 
                     {/* Routes protégées */}
                     {/* <Route element={<ProtectedRoute allowedGroups={["utilisateur", "annonceur"]} />}>
