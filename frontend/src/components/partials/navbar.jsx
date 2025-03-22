@@ -11,21 +11,127 @@ import {
   useColorModeValue,
   Avatar,
   Image,
+  Button,
+  Text,
+  Skeleton,
+  SkeletonCircle,
+  SkeletonText,
 } from "@chakra-ui/react"
+import logo from "@/assets/logo.png"
+import logoText from "@/assets/logo-texte.png"
 import { HamburgerIcon, CloseIcon } from "@chakra-ui/icons"
+import { useAuth } from "@/hooks/useAuth"
+import { useNavigate } from "react-router-dom"
+import { useEffect, useState } from "react"
+import { FaHome, FaHeart, FaEnvelope, FaBell, FaTrophy, FaChartLine, FaCog } from "react-icons/fa" // Icônes pour les liens
+
 export default function SimpleNavbar() {
   const { isOpen, onOpen, onClose } = useDisclosure()
+  const { user, isAuthenticated, userGroups, userDetail } = useAuth()
+  const [isLoading, setIsLoading] = useState(true) // État pour gérer le chargement
+  const navigate = useNavigate()
 
-  // Memoize color mode values to prevent conditional hook calls
+  // Simuler le chargement des groupes
+  useEffect(() => {
+    if (userGroups && userDetail) {
+      setIsLoading(false)
+    }
+  }, [userGroups, userDetail])
+
+  // Couleurs et styles
   const bgColor = useColorModeValue("white", "gray.800")
   const hoverBgColor = useColorModeValue("gray.200", "gray.700")
 
+  // Liens communs pour les utilisateurs normaux et les annonceurs
+  const commonLinks = [
+    { label: "Accueil", href: "/annonce", icon: <FaHome /> },
+    { label: "Tombolas", href: "/tombolas", icon: <FaTrophy /> },
+  ]
+
+  // Liens spécifiques pour les utilisateurs normaux
+  const normalUserLinks = [
+    { label: "Favoris", href: "/favorites", icon: <FaHeart /> },
+    { label: "Messages", href: "#", icon: <FaEnvelope /> },
+    { label: "Notifications", href: "#", icon: <FaBell /> },
+    { label: "Paramètres", href: "/parametres", icon: <FaCog /> },
+  ]
+
+  // Liens spécifiques pour les annonceurs
+  const annonceurLinks = [
+    { label: "Dashboard", href: "/dashboard", icon: <FaChartLine /> },
+  ]
+
+  // Fonction pour afficher les liens
+  const renderLinks = (links) => {
+    return links.map((link, index) => (
+      <Link
+        key={index}
+        px={2}
+        py={1}
+        rounded={"md"}
+        _hover={{
+          textDecoration: "none",
+          bg: hoverBgColor,
+        }}
+        href={link.href}
+        display="flex"
+        alignItems="center"
+        gap={2}
+      >
+        {link.icon} {/* Icône */}
+        <Text>{link.label}</Text> {/* Texte du lien */}
+      </Link>
+    ))
+  }
+
+  // Si les données ne sont pas encore chargées, on affiche un Skeleton
+  if (isLoading) {
+    return (
+      <Box bg={bgColor} px={4} boxShadow="0 4px 12px 0 rgba(0, 0, 0, 0.05)" position="sticky" top="0" zIndex="sticky" margin="0">
+        <Flex h={16} alignItems="center" justifyContent="space-between">
+          {/* Skeleton pour le menu hamburger (mobile) */}
+          <Skeleton>
+            <IconButton size="md" display={{ md: "none" }} />
+          </Skeleton>
+
+          {/* Skeleton pour le logo */}
+          <Skeleton>
+            <Image h="100px" src={logoText} alt="Logo" />
+          </Skeleton>
+
+          {/* Skeleton pour les liens de navigation */}
+          <HStack spacing={8} alignItems="center">
+            <HStack as="nav" spacing={4} display={{ base: "none", md: "flex" }}>
+              {commonLinks.map((_, index) => (
+                <Skeleton key={index} height="20px" width="60px" />
+              ))}
+            </HStack>
+
+            {/* Skeleton pour le bouton de connexion */}
+            <Skeleton>
+              <Button style={{ background: "#4FD1C5" }}>Login</Button>
+            </Skeleton>
+
+            {/* Skeleton pour l'avatar */}
+            <SkeletonCircle size="8" />
+          </HStack>
+        </Flex>
+      </Box>
+    )
+  }
+
   return (
-    <Box bg={bgColor} px={4} boxShadow="sm" position="sticky" top="0" zIndex="sticky">
-
-
+    <Box
+      bg={bgColor}
+      px={4}
+      boxShadow="0 4px 12px 0 rgba(0, 0, 0, 0.05)" // Ombre en bas
+      position="sticky"
+      top="0"
+      zIndex="sticky"
+      margin="0"
+    >
       <Flex h={16} alignItems={"center"} justifyContent={"space-between"}>
-        {/* Zone pour le menu hamburger (mobile) */}
+        {/* Menu hamburger (mobile) */}
         <IconButton
           size={"md"}
           icon={isOpen ? <CloseIcon /> : <HamburgerIcon />}
@@ -34,157 +140,55 @@ export default function SimpleNavbar() {
           onClick={isOpen ? onClose : onOpen}
         />
 
-        {/* Zone pour le logo */}
+        {/* Logo */}
         <Box>
-          <Image h="40px" src="/placeholder.svg?height=40&width=120" alt="Logo" />
+          <Image h="100px" src={logoText} alt="Logo" />
         </Box>
 
-        <HStack>
-             <HStack spacing={8} alignItems={"center"}>
+        {/* Liens de navigation (desktop) */}
+        <HStack spacing={8} alignItems={"center"}>
           <HStack as={"nav"} spacing={4} display={{ base: "none", md: "flex" }}>
-            <Link
-              px={2}
-              py={1}
-              rounded={"md"}
-              _hover={{
-                textDecoration: "none",
-                bg: hoverBgColor,
-              }}
-              href={"/annonce"}
-            >
-              Accueil
-            </Link>
-            <Link
-              px={2}
-              py={1}
-              rounded={"md"}
-              _hover={{
-                textDecoration: "none",
-                bg: hoverBgColor,
-              }}
-              href={"/favorites"}
-            >
-              Favoris
-            </Link>
-            <Link
-              px={2}
-              py={1}
-              rounded={"md"}
-              _hover={{
-                textDecoration: "none",
-                bg: hoverBgColor,
-              }}
-              href={"#"}
-            >
-              Messages
-            </Link>
-            <Link
-              px={2}
-              py={1}
-              rounded={"md"}
-              _hover={{
-                textDecoration: "none",
-                bg: hoverBgColor,
-              }}
-              href={"#"}
-            >
-              Notifications
-            </Link>
-            <Link
-              px={2}
-              py={1}
-              rounded={"md"}
-              _hover={{
-                textDecoration: "none",
-                bg: hoverBgColor,
-              }}
-              href={"/dashboard"}
-            >
-              Dashboard
-            </Link>
+            {renderLinks(commonLinks)}
+            {!userGroups.includes("annonceur") && renderLinks(normalUserLinks)}
+            {userGroups.includes("annonceur") && renderLinks(annonceurLinks)}
           </HStack>
-        </HStack>
 
-        {/* Zone pour l'avatar */}
-        <Flex alignItems={"center"}>
-          <Avatar size={"sm"} src="/placeholder.svg?height=32&width=32" cursor="pointer" />
-        </Flex>
+          {/* Bouton de connexion */}
+          {!isAuthenticated ? (
+            <Button
+              style={{ background: "#4FD1C5" }}
+              onClick={() => navigate("/login")}
+            >
+              Login
+            </Button>
+          ) : (
+            <Flex alignItems={"center"}>
+              {/* Avatar avec photo de profil */}
+              <Avatar
+                size={"sm"}
+                name={userDetail?.name}
+                src={userDetail?.photo || "/placeholder.svg?height=32&width=32"}
+                cursor="pointer"
+              />
+              {/* Nom de l'utilisateur */}
+              <Text ml={2} fontWeight="medium">
+                {userDetail?.name}
+              </Text>
+            </Flex>
+          )}
         </HStack>
-
-        {/* Zone pour le menu de navigation avec liens en dur */}
-       
       </Flex>
 
-     
-
-      {/* Menu mobile avec liens en dur */}
-      {isOpen ? (
+      {/* Menu mobile */}
+      {isOpen && (
         <Box pb={4} display={{ md: "none" }}>
           <Stack as={"nav"} spacing={4}>
-            <Link
-              px={2}
-              py={1}
-              rounded={"md"}
-              _hover={{
-                textDecoration: "none",
-                bg: hoverBgColor,
-              }}
-              href={"/annonce"}
-            >
-              Accueil
-            </Link>
-            <Link
-              px={2}
-              py={1}
-              rounded={"md"}
-              _hover={{
-                textDecoration: "none",
-                bg: hoverBgColor,
-              }}
-              href={"#"}
-            >
-              Favoris
-            </Link>
-            <Link
-              px={2}
-              py={1}
-              rounded={"md"}
-              _hover={{
-                textDecoration: "none",
-                bg: hoverBgColor,
-              }}
-              href={"#"}
-            >
-              Messages
-            </Link>
-            <Link
-              px={2}
-              py={1}
-              rounded={"md"}
-              _hover={{
-                textDecoration: "none",
-                bg: hoverBgColor,
-              }}
-              href={"#"}
-            >
-              Notifications
-            </Link>
-            <Link
-              px={2}
-              py={1}
-              rounded={"md"}
-              _hover={{
-                textDecoration: "none",
-                bg: hoverBgColor,
-              }}
-              href={"/dashboard"}
-            >
-              Dashboard
-            </Link>
+            {renderLinks(commonLinks)}
+            {!userGroups.includes("annonceur") && renderLinks(normalUserLinks)}
+            {userGroups.includes("annonceur") && renderLinks(annonceurLinks)}
           </Stack>
         </Box>
-      ) : null}
+      )}
     </Box>
   )
 }
-

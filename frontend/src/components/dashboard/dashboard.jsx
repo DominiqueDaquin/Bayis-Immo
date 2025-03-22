@@ -49,18 +49,20 @@ import HomeDashboard from "./home"
 import Chat from "./chat"
 import { useState } from "react"
 import Annonce from "./annonce"
-import Tombola from "./tombola"
+import Tombola from "./tombola/tombola"
 import Notifications from "./notification"
+import GestionnaireCampagnes from "./publicite"
+import ProfileSettings from "./settings"
+
 // Composants associés à chaque élément du menu
 const DashboardContent = () => <HomeDashboard />
 const AnnouncementsContent = () => <Annonce/>
-const TombolaContent = () => <Tombola/>
-const AdsContent = () => <Text>Publicité</Text>
+const TombolaContent = () => <Tombola isModerateur={false} />
+const AdsContent = () => <GestionnaireCampagnes isModerateur={false}/>
 const NotificationsContent = () => <Notifications/>
 const MessagesContent = () => <Chat/>
 const StatisticsContent = () => <Text>Statistiques</Text>
-const SettingsContent = () => <Text>Paramètres</Text>
-
+const SettingsContent = () => <ProfileSettings/>
 const NavItem = ({ icon, children, onClick, ...rest }) => {
   return (
     <Button

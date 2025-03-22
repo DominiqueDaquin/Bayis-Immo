@@ -4,6 +4,7 @@ import {
     Input,
     Link,
     Text,
+    Checkbox,
 } from "@chakra-ui/react";
 import { BaseForm } from "./base-form";
 import React, { useState } from "react";
@@ -16,6 +17,7 @@ export const SignupForm = () => {
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
     const [password, setPassword] = useState("");
+    const [isAnnonceur, setIsAnnonceur] = useState(false); // État pour la checkbox
     const [isLoading, setIsLoading] = useState(false);
     const toast = useToast();
     const navigate = useNavigate();
@@ -25,15 +27,26 @@ export const SignupForm = () => {
         setIsLoading(true);
 
         try {
+            // Étape 1 : Créer l'utilisateur
             const response = await axiosInstance.post("/auth/users/", {
                 email: email,
-                name: name, 
+                name: name,
                 phone: phone,
                 password: password,
-                username:email,
+                username: email,
             });
 
             if (response.status === 201) {
+                // Étape 2 : Si l'utilisateur est un annonceur, l'ajouter au groupe "annonceur"
+                if (isAnnonceur) {
+                    const userId = response.data.id; // Supposons que l'API retourne l'ID de l'utilisateur
+                    await axiosInstance.post("/auth/add-to-group/", {
+                        user_id: userId,
+                        group_name: "annonceur",
+                    });
+                }
+
+                // Afficher un message de succès
                 toast({
                     title: "Inscription réussie.",
                     description: "Vous avez été inscrit avec succès.",
@@ -41,9 +54,14 @@ export const SignupForm = () => {
                     duration: 5000,
                     isClosable: true,
                 });
-                navigate("/login"); // Rediriger vers la route /annonce
+
+                // Rediriger vers la page de connexion
+                navigate("/login");
             }
         } catch (error) {
+            console.log(error);
+            
+            // Gérer les erreurs
             toast({
                 title: "Erreur lors de l'inscription.",
                 description: error.response?.data?.detail || JSON.stringify(error.response?.data) || "Une erreur s'est produite.",
@@ -119,6 +137,17 @@ export const SignupForm = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                 />
+            </Box>
+
+            {/* Checkbox pour s'inscrire en tant qu'annonceur */}
+            <Box mb={4}>
+                <Checkbox
+                    isChecked={isAnnonceur}
+                    onChange={(e) => setIsAnnonceur(e.target.checked)}
+                    colorScheme="blue"
+                >
+                    S'inscrire en tant qu'annonceur
+                </Checkbox>
             </Box>
 
             <Button

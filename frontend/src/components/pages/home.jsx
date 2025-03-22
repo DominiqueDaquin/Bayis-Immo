@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { useState, useEffect } from "react";
 import {
@@ -27,12 +27,14 @@ import {
   Button,
   useToast,
 } from "@chakra-ui/react";
-import { FaHeart, FaRegHeart, FaThLarge, FaEllipsisH, FaCommentAlt, FaFilter } from "react-icons/fa";
+import { FaHeart, FaRegHeart, FaThLarge,FaCommentAlt, FaFilter } from "react-icons/fa";
 import { StarIcon } from "@chakra-ui/icons";
-import SimpleNavbar from "./partials/navbar";
-import axiosInstance from "@/api/axios"; // Assurez-vous que le chemin est correct
-
-const baseUrl='http://127.0.0.1:8000'
+import SimpleNavbar from "../partials/navbar";
+import axiosInstance from "@/api/axios";
+import Loading from "../partials/loading";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import { baseUrl } from "@/config";
 
 const Pagination = ({ currentPage, totalPages, onPageChange }) => (
   <HStack spacing={2} mt={8} justify="center" flexWrap="wrap">
@@ -90,9 +92,9 @@ const Rating = ({ rating, reviews }) => (
   </HStack>
 );
 
-const PropertyCard = ({ property, isFavorite, onToggleFavorite }) => {
+const PropertyCard = ({ property, isFavorite, onToggleFavorite,id }) => {
   const hoverEffect = useColorModeValue("shadow-lg", "dark-shadow");
-
+  const navigate=useNavigate()
   return (
     <Card
       maxW="sm"
@@ -102,9 +104,8 @@ const PropertyCard = ({ property, isFavorite, onToggleFavorite }) => {
       _hover={{ transform: "translateY(-4px)", shadow: "md" }}
     >
       <Box position="relative">
-        {()=>console.log("photo",property.photos[0]?.url )}
         <Image
-          src={`${baseUrl}${property.photos[0]?.photo || "https://via.placeholder.com/300"}`}// Utilisez la première photo ou une image par défaut
+          src={`${baseUrl}${property.photos[0]?.photo}`   || "https://via.placeholder.com/300"}
           alt={property.titre}
           height={{ base: "200px", md: "240px" }}
           width="100%"
@@ -113,7 +114,7 @@ const PropertyCard = ({ property, isFavorite, onToggleFavorite }) => {
         />
         <Box position="absolute" top="2" right="2">
           <IconButton
-            aria-label="Favorite"
+            aria-label="Ajouter aux favoris"
             icon={isFavorite ? <FaHeart color="red" /> : <FaRegHeart />}
             variant="ghost"
             colorScheme="whiteAlpha"
@@ -145,8 +146,8 @@ const PropertyCard = ({ property, isFavorite, onToggleFavorite }) => {
           <HStack spacing={2} w="full" pt={2}>
             <Avatar size="sm" src={property.creer_par?.avatar || "https://bit.ly/dan-abramov"} />
             <Text fontSize="sm" color="gray.600">{property.creer_par?.name || "Anonyme"}</Text>
-            <Button size="sm" ml="auto" colorScheme="blue" variant="outline">
-              Contacter
+            <Button size="sm" ml="auto" colorScheme="blue" variant="outline" onClick={()=>navigate(`/detail-annonce/${id}`)} >
+              Voir
             </Button>
           </HStack>
         </VStack>
@@ -167,57 +168,133 @@ export default function Home() {
   const [annonces, setAnnonces] = useState([]);
   const [loading, setLoading] = useState(true);
   const toast = useToast();
+  const { user, isAuthenticated } = useAuth();
 
   const itemsPerPage = 6;
-  const totalPages = Math.ceil(annonces.length / itemsPerPage);
+  const totalPages = Math.ceil(annonces.length / itemsPerPage) || 1;
   const paginatedProperties = annonces.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
-  // Récupérer les annonces depuis l'API
-  useEffect(() => {
-    const fetchAnnonces = async () => {
-      try {
-        const response = await axiosInstance.get("/api/annonces");
-        console.log(response);
-        
-        setAnnonces(response.data);
-      } catch (error) {
-        toast({
-          title: "Erreur",
-          description: "Impossible de charger les annonces. Veuillez réessayer.",
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAnnonces();
-  }, [toast]);
-
-  const handleToggleFavorite = (id) => {
-    setFavorites((prev) =>
-      prev.includes(id) ? prev.filter((favId) => favId !== id) : [...prev, id]
-    );
-  };
-
   const handleCategoryChange = (category) => {
-    setCategories((prev) => ({
-      ...prev,
-      [category]: !prev[category],
+    setCategories((prevCategories) => ({
+      ...prevCategories,
+      [category]: !prevCategories[category],
     }));
   };
 
+  const handlePageChange = (page) => {
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
+  };
+
+  const fetchAnnonces = async () => {
+    try {
+      const response = await axiosInstance.get("/api/annonces");
+      setAnnonces(response.data);
+    } catch (error) {
+      console.error("Erreur lors de la récupération des annonces:", error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de charger les annonces. Veuillez réessayer.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchFavorites = async () => {
+    if (!user) return;
+    try {
+      const response = await axiosInstance.get('/api/favoris');
+      setFavorites(response.data.map(fav => fav.annonce));
+    } catch (error) {
+      console.error("Erreur lors de la récupération des favoris:", error);
+    }
+  };
+
+  const addToFavorites = async (annonceId) => {
+    if (!user) {
+      toast({
+        title: "Veuillez vous connecter pour ajouter aux favoris.",
+        status: "warning",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+    try {
+      console.log(annonceId);
+      
+      const response = await axiosInstance.post("/api/favoris/", {
+        user: user.id,
+        annonce: annonceId,
+      });
+      setFavorites((prevFavorites) => [...prevFavorites, annonceId]);
+      toast({
+        title: "Ajouté aux favoris !",
+        status: "success",
+        duration: 2000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error("Erreur lors de l'ajout aux favoris:", error);
+      toast({
+        title: "Erreur lors de l'ajout aux favoris",
+        description: error.message || "Une erreur s'est produite.",
+        status: "error",
+        duration: 2000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const removeFromFavorites = async (annonceId) => {
+    try {
+      const response = await axiosInstance.delete(`/api/favoris/${annonceId}`);
+      setFavorites((prevFavorites) =>
+        prevFavorites.filter((fav) => fav !== annonceId)
+      );
+      toast({
+        title: "Retiré des favoris !",
+        status: "success",
+        duration: 2000,
+        isClosable: true,
+      });
+    } catch (error) {
+      console.error("Erreur lors du retrait des favoris:", error);
+      toast({
+        title: "Erreur lors du retrait des favoris",
+        description: error.message || "Une erreur s'est produite.",
+        status: "error",
+        duration: 2000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleToggleFavorite = (annonceId) => {
+    if (favorites.includes(annonceId)) {
+      removeFromFavorites(annonceId);
+    } else {
+      addToFavorites(annonceId);
+    }
+  };
+
+  useEffect(() => {
+    fetchAnnonces();
+  }, []);
+
+  useEffect(() => {
+    fetchFavorites();
+  }, [user]);
+
   if (loading) {
-    return (
-      <Box textAlign="center" py={10}>
-        <Text>Chargement des annonces...</Text>
-      </Box>
-    );
+    return <Loading />;
   }
 
   return (
@@ -332,6 +409,7 @@ export default function Home() {
                     property={property}
                     isFavorite={favorites.includes(property.id)}
                     onToggleFavorite={handleToggleFavorite}
+                    id={property.id}
                   />
                 </GridItem>
               ))}
@@ -339,7 +417,7 @@ export default function Home() {
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
-              onPageChange={setCurrentPage}
+              onPageChange={handlePageChange}
             />
           </Box>
         </Flex>

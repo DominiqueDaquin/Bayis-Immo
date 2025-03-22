@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Box,
   Container,
@@ -27,6 +27,7 @@ import {
   Tooltip,
   Select,
   useBreakpointValue,
+  useToast,
 } from "@chakra-ui/react"
 import {
   FiSearch,
@@ -43,19 +44,20 @@ import {
   FiEye,
   FiEyeOff,
 } from "react-icons/fi"
+import axiosInstance from "@/api/axios"
 
 // Composant pour une notification individuelle
 const NotificationCard = ({ notification, onMarkAsRead, onDelete, onArchive }) => {
-  const { id, title, message, type, date, isRead, isImportant } = notification
+  const { id, message, type, created_at, is_read, is_important } = notification
 
   const getTypeIcon = (type) => {
     switch (type) {
-      case "success":
-        return FiCheckCircle
-      case "warning":
-        return FiInfo
-      case "error":
+      case "a": // Alerte
         return FiAlertCircle
+      case "c": // Critique
+        return FiInfo
+      case "d": // Default
+        return FiBell
       default:
         return FiBell
     }
@@ -63,14 +65,14 @@ const NotificationCard = ({ notification, onMarkAsRead, onDelete, onArchive }) =
 
   const getTypeColor = (type) => {
     switch (type) {
-      case "success":
-        return "green"
-      case "warning":
-        return "orange"
-      case "error":
+      case "a":
         return "red"
-      default:
+      case "c":
+        return "orange"
+      case "d":
         return "blue"
+      default:
+        return "gray"
     }
   }
 
@@ -80,7 +82,7 @@ const NotificationCard = ({ notification, onMarkAsRead, onDelete, onArchive }) =
 
   return (
     <Card
-      bg={isRead ? bgColor : "blue.50"}
+      bg={is_read ? bgColor : "blue.50"}
       borderWidth="1px"
       borderColor={borderColor}
       transition="all 0.2s"
@@ -93,13 +95,13 @@ const NotificationCard = ({ notification, onMarkAsRead, onDelete, onArchive }) =
           <VStack align="stretch" flex={1} spacing={1}>
             <Flex justify="space-between" align="center">
               <HStack>
-                <Text fontWeight="bold">{title}</Text>
-                {isImportant && (
+                <Text fontWeight="bold">{message}</Text>
+                {is_important && (
                   <Badge colorScheme="yellow" variant="solid">
                     Important
                   </Badge>
                 )}
-                {!isRead && (
+                {!is_read && (
                   <Badge colorScheme="blue" variant="solid">
                     Nouveau
                   </Badge>
@@ -108,8 +110,8 @@ const NotificationCard = ({ notification, onMarkAsRead, onDelete, onArchive }) =
               <Menu>
                 <MenuButton as={IconButton} icon={<FiMoreVertical />} variant="ghost" size="sm" aria-label="Options" />
                 <MenuList>
-                  <MenuItem icon={isRead ? <FiEyeOff /> : <FiEye />} onClick={() => onMarkAsRead(id)}>
-                    Marquer comme {isRead ? "non lu" : "lu"}
+                  <MenuItem icon={is_read ? <FiEyeOff /> : <FiEye />} onClick={() => onMarkAsRead(id)}>
+                    Marquer comme {is_read ? "non lu" : "lu"}
                   </MenuItem>
                   <MenuItem icon={<FiArchive />} onClick={() => onArchive(id)}>
                     Archiver
@@ -120,11 +122,8 @@ const NotificationCard = ({ notification, onMarkAsRead, onDelete, onArchive }) =
                 </MenuList>
               </Menu>
             </Flex>
-            <Text color="gray.600" fontSize="sm">
-              {message}
-            </Text>
             <Text color="gray.500" fontSize="xs">
-              {new Date(date).toLocaleDateString("fr-FR", {
+              {new Date(created_at).toLocaleDateString("fr-FR", {
                 day: "numeric",
                 month: "long",
                 year: "numeric",
@@ -141,121 +140,170 @@ const NotificationCard = ({ notification, onMarkAsRead, onDelete, onArchive }) =
 
 // Composant principal
 export default function Notifications() {
-  // État pour les notifications
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: "Nouvelle réservation",
-      message: "Une nouvelle réservation a été effectuée pour la villa moderne avec piscine.",
-      type: "success",
-      date: "2024-03-15T10:30:00",
-      isRead: false,
-      isImportant: true,
-    },
-    {
-      id: 2,
-      title: "Mise à jour requise",
-      message: "Une mise à jour importante du système est disponible. Veuillez mettre à jour dès que possible.",
-      type: "warning",
-      date: "2024-03-15T09:15:00",
-      isRead: false,
-      isImportant: true,
-    },
-    {
-      id: 3,
-      title: "Erreur de paiement",
-      message: "Le paiement pour la réservation #1234 a échoué. Une action est requise.",
-      type: "error",
-      date: "2024-03-14T16:45:00",
-      isRead: false,
-      isImportant: true,
-    },
-    {
-      id: 4,
-      title: "Nouveau message",
-      message: "Vous avez reçu un nouveau message de Marie Dubois concernant sa réservation.",
-      type: "info",
-      date: "2024-03-14T14:20:00",
-      isRead: true,
-      isImportant: false,
-    },
-    {
-      id: 5,
-      title: "Tombola terminée",
-      message: "La tombola 'Noël 2023' est terminée. Le tirage au sort aura lieu demain.",
-      type: "success",
-      date: "2024-03-14T11:00:00",
-      isRead: true,
-      isImportant: false,
-    },
-    {
-      id: 6,
-      title: "Maintenance planifiée",
-      message: "Une maintenance système est prévue ce soir à 22h00. Durée estimée : 2 heures.",
-      type: "warning",
-      date: "2024-03-14T09:30:00",
-      isRead: true,
-      isImportant: true,
-    },
-  ])
-
+  const [notifications, setNotifications] = useState([])
   const [filter, setFilter] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
+  const toast = useToast()
 
-  // Nombre de colonnes selon la taille d'écran
+  // Définir le nombre de colonnes en fonction de la taille de l'écran
   const columns = useBreakpointValue({ base: 1, md: 2, lg: 3 })
+  const bgColor=useColorModeValue("white", "gray.800")
 
-  // Gestionnaires d'événements
-  const handleMarkAsRead = (id) => {
-    setNotifications(notifications.map((notif) => (notif.id === id ? { ...notif, isRead: !notif.isRead } : notif)))
+  // Récupérer les notifications
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      try {
+        const response = await axiosInstance.get("/api/notifications/mes-notifications")
+        if (Array.isArray(response.data)) {
+          setNotifications(response.data)
+        } else {
+          toast({
+            title: "Erreur",
+            description: "La réponse de l'API n'est pas un tableau.",
+            status: "error",
+            duration: 3000,
+            isClosable: true,
+            position: "top",
+          })
+        }
+      } catch (err) {
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger les notifications.",
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+          position: "top",
+        })
+      }
+    }
+
+    fetchNotifications()
+  }, [])
+
+  // Marquer une notification comme lue
+  const handleMarkAsRead = async (id) => {
+    try {
+      await axiosInstance.patch(`/api/notifications/${id}/`, { is_read: true })
+      setNotifications((prev) =>
+        prev.map((notif) => (notif.id === id ? { ...notif, is_read: true } : notif))
+    )
+    toast({
+      title: "Succès",
+      description: "Notification marquée comme lue.",
+      status: "success",
+      duration: 3000,
+      isClosable: true,
+      position: "top",
+    })
+
+      // Si le filtre actif est "unread", basculer vers "all" pour éviter que la notification disparaisse
+      if (filter === "unread") {
+        setFilter("all")
+      }
+    } catch (err) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de marquer la notification comme lue.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+        position: "top",
+      })
+    }
   }
 
-  const handleDelete = (id) => {
-    setNotifications(notifications.filter((notif) => notif.id !== id))
+  // Archiver une notification
+  const handleArchive = async (id) => {
+    try {
+      await axiosInstance.patch(`/api/notifications/${id}/`, { is_archived: true })
+      setNotifications((prev) =>{
+        prev.map((notif) => (notif.id === id ? { ...notif, is_archived: true } : notif))
+      toast({
+        title: "Succès",
+        description: "Notification archivée.",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+        position: "top",
+      })})
+
+      // Si le filtre actif est "important", basculer vers "all" pour éviter que la notification disparaisse
+      if (filter === "important") {
+        setFilter("all")
+      }
+    } catch (err) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'archiver la notification.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+        position: "top",
+      })
+    }
   }
 
-  const handleArchive = (id) => {
-    // Logique d'archivage à implémenter
-    console.log("Archiver notification:", id)
+  // Supprimer une notification
+  const handleDelete = async (id) => {
+    try {
+      await axiosInstance.delete(`/api/notifications/${id}/`)
+      setNotifications((prev) => prev.filter((notif) => notif.id !== id))
+      toast({
+        title: "Succès",
+        description: "Notification supprimée.",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+        position: "top",
+      })
+    } catch (err) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer la notification.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+        position: "top",
+      })
+    }
   }
 
   // Filtrage des notifications
-  const filteredNotifications = notifications.filter((notif) => {
-    const matchesSearch =
-      notif.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      notif.message.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredNotifications = notifications
+    ? notifications.filter((notif) => {
+        const matchesSearch = notif.message.toLowerCase().includes(searchQuery.toLowerCase())
 
-    switch (filter) {
-      case "unread":
-        return !notif.isRead && matchesSearch
-      case "important":
-        return notif.isImportant && matchesSearch
-      default:
-        return matchesSearch
-    }
-  })
+        switch (filter) {
+          case "unread":
+            return !notif.is_read && matchesSearch
+          case "important":
+            return notif.is_important && matchesSearch
+          case "archived":
+            return notif.is_archived && matchesSearch
+          default:
+            return matchesSearch // Afficher toutes les notifications, y compris archivées
+        }
+      })
+    : [] // Retourne un tableau vide si notifications est undefined
 
   // Statistiques des notifications
   const stats = {
-    total: notifications.length,
-    unread: notifications.filter((n) => !n.isRead).length,
-    important: notifications.filter((n) => n.isImportant).length,
+    total: notifications ? notifications.length : 0,
+    unread: notifications ? notifications.filter((n) => !n.is_read).length : 0,
+    important: notifications ? notifications.filter((n) => n.is_important).length : 0,
+    archived: notifications ? notifications.filter((n) => n.is_archived).length : 0,
   }
 
   return (
-    <Box bg="white" minH="100vh" w="100%">
+    <Box bg={bgColor} minH="100vh" w="100%">
       <Container maxW="7xl" py={8}>
         {/* En-tête */}
         <VStack spacing={6} align="stretch" mb={8}>
-          <Flex
-            justify="space-between"
-            align="center"
-            direction={{ base: "column", sm: "row" }}
-            gap={{ base: 4, sm: 0 }}
-          >
+          <Flex justify="space-between" align="center" direction={{ base: "column", sm: "row" }} gap={{ base: 4, sm: 0 }}>
             <Heading size="lg">Notifications</Heading>
             <HStack spacing={4}>
-              <Button leftIcon={<FiRefreshCw />} variant="ghost">
+              <Button leftIcon={<FiRefreshCw />} variant="ghost" onClick={() => window.location.reload()}>
                 Actualiser
               </Button>
               <Button leftIcon={<FiSettings />} variant="ghost">
@@ -307,7 +355,7 @@ export default function Notifications() {
                     Archivées
                   </Text>
                   <Heading size="md" color="gray.500">
-                    0
+                    {stats.archived}
                   </Heading>
                 </VStack>
               </CardBody>
@@ -330,6 +378,7 @@ export default function Notifications() {
               <option value="all">Toutes</option>
               <option value="unread">Non lues</option>
               <option value="important">Importantes</option>
+              <option value="archived">Archivées</option>
             </Select>
             <HStack spacing={2} justify={{ base: "flex-end", sm: "flex-start" }}>
               <Tooltip label="Tout marquer comme lu">
@@ -365,4 +414,3 @@ export default function Notifications() {
     </Box>
   )
 }
-
