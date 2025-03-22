@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Media,Annonce,Message,Discussion,AnnonceFavoris,Note,Tombola,Commentaire,Vue
+from .models import Media,Annonce,Message,Discussion,AnnonceFavoris,Note,Tombola,Commentaire,Vue,Publicite,UserTombola
 from django.contrib.auth import get_user_model
 from .models import Notification
 User=get_user_model()
@@ -109,10 +109,20 @@ class TombolaSerializer(serializers.ModelSerializer):
         model = Tombola
         fields = [
             'id', 'titre', 'cagnotte', 'participants_actuel', 'statut', 'statut_display', 
-            'date_fin', 'participants','photo','createur'
+            'date_fin', 'participants','photo','creer_par'
         ]
-        read_only_fields = ['participants_actuel']
+        read_only_fields = ['participants_actuel','statut_display']
 
+class UserTombolaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=UserTombola
+        fields=['id','user','tombola','date_participation']
+
+class UserSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model=UserTombola
+        fields=["user","tombola","date_participation"]
 
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -148,5 +158,32 @@ class VueSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Vue
-        fields = ['annonce','user']  
-        
+        fields = ['annonce','user','publicite']  
+        extra_kwargs={
+            "annonce":{"allow_null":True,"required":False},
+            "publicite":{"allow_null":True,"required":False}
+        }
+
+    def validate(self, data):
+        """
+        Vérifie qu'un utilisateur ne peut voir qu'une seule fois un article.
+        """
+        if Vue.objects.filter(user=data['user'], annonce=data['annonce']).exists():
+            raise serializers.ValidationError("L'utilisateur a déjà vu cet article.")
+        return data
+
+
+class PubliciteSerializer(serializers.ModelSerializer):
+    nombre_de_jours = serializers.IntegerField(read_only=True)
+    date_fin = serializers.DateTimeField(read_only=True) 
+    date_creation = serializers.DateTimeField(read_only=True) 
+
+    class Meta:
+        model = Publicite
+        fields = ['id', 'user', 'titre', 'annonce', 'montant', 'is_active', 'date_creation', 'nombre_de_jours', 'date_fin']
+    
+    def validate_montant(self, value):
+        """Validation du montant minimum"""
+        if value < 500:
+            raise serializers.ValidationError("Le montant minimum est de 500 FCFA.")
+        return value

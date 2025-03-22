@@ -68,8 +68,10 @@ class Discussion(models.Model):
     creer_le=models.DateTimeField(auto_now_add=True)
     createur1=models.ForeignKey(get_user_model(),on_delete=models.SET_NULL,null=True,related_name="discussions_initiees")
     createur2=models.ForeignKey(get_user_model(),on_delete=models.SET_NULL,null=True,related_name="discussion_recues")
-    
 
+    def __str__(self):
+        return f" Discussion de {self.createur1} et {self.createur2} "
+    
 class Message(models.Model):
     """ Message pour les discussions  """
     CHOICES=[
@@ -124,8 +126,6 @@ class Message(models.Model):
     def __str__(self):
         return f'message {self.id}'
     
-
-
 class AnnonceFavoris(models.Model):
     user=models.ForeignKey(get_user_model(),on_delete=models.CASCADE)
     annonce=models.ForeignKey(Annonce,on_delete=models.CASCADE)
@@ -137,7 +137,6 @@ class AnnonceFavoris(models.Model):
     
     def __str__(self):
         return f"{self.user} - annonce : {self.annonce.titre}"
-
 
 class Note(models.Model):
     valeur = models.DecimalField(max_digits=3, decimal_places=1, validators=[MinValueValidator(0), MaxValueValidator(5)],default=0.0)
@@ -159,23 +158,6 @@ class Note(models.Model):
         moyenne= somme / len(list(note))
         return moyenne
     
-
-
-class Vue(models.Model):
-    """
-    Ce modèle stocke les vues d'un article par utilisateur.
-    """
-    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
-    annonce = models.ForeignKey("Annonce", on_delete=models.CASCADE, related_name="vues")
-    date_vue = models.DateTimeField(auto_now_add=True)  
-
-    class Meta:
-        unique_together = ('user', 'annonce')  
-
-    def __str__(self):
-        return f"{self.user} a vu {self.article}"
-
-
 class Commentaire(models.Model):
     user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
     annonce = models.ForeignKey(Annonce, on_delete=models.CASCADE, null=True, blank=True)
@@ -185,28 +167,71 @@ class Commentaire(models.Model):
     texte = models.TextField()
     creer_le=models.DateTimeField(auto_now_add=True)
 
+class Publicite(models.Model):
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
+    titre = models.CharField(max_length=255)
+    annonce = models.ForeignKey(Annonce, on_delete=models.CASCADE)
+    montant = models.DecimalField(max_digits=10, decimal_places=2)
+    is_active = models.BooleanField(default=False)
+    date_creation = models.DateTimeField(auto_now_add=True)
 
-class Tombola(models.Model):
-    user=models.ForeignKey(get_user_model(),on_delete=models.CASCADE)
-    titre=models.CharField(max_length=255)
-    photo=models.ImageField()
-    is_active=models.BooleanField(default=True)
 
+    class Meta:
+        verbose_name="Publicité"
+        verbose_name_plural="Publicités"
+    
+
+    @property
+    def nombre_de_jours(self):
+        montant_quotidien = 250
+        return max(int(self.montant // montant_quotidien), 2)
+
+    @property
+    def date_fin(self):
+        return self.date_creation + timedelta(days=int(self.nombre_de_jours))
+
+    def clean(self):
+        if self.montant < 500:
+            raise ValidationError("Le montant minimum est de 500 FCFA.")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.titre} - {self.nombre_de_jours} jours (Fin: {self.date_fin})"
+
+class Vue(models.Model):
+    """
+    Ce modèle stocke les vues d'un article par utilisateur.
+    """
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
+    annonce = models.ForeignKey("Annonce", on_delete=models.CASCADE, related_name="vues",null=True,blank=True)
+    date_vue = models.DateTimeField(auto_now_add=True)  
+    publicite=models.ForeignKey(Publicite,on_delete=models.CASCADE,blank=True,null=True)
+
+    class Meta:
+        unique_together = ('user', 'annonce')  
+
+    def __str__(self):
+        return f"{self.user} a vu {self.article}"
 
 class Tombola(models.Model):
     STATUS_CHOICES = [
         ('a', 'Active'),
         ('p', 'En attente'),
         ('f', 'Terminée'),
+        ('r', 'rejeté'),
     ]
 
     photo = models.ImageField(upload_to='tombola_photos/', blank=True, null=True)
     titre = models.CharField(max_length=200)
+    description=models.TextField()
     cagnotte = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         default=0.00,
-        help_text="Montant de la cagnotte (en euros, FCFA, etc.)"
+        help_text="Montant de la cagnotte (FCFA)"
     )
     participants_actuel = models.PositiveIntegerField(default=0)
     statut = models.CharField(
@@ -221,13 +246,12 @@ class Tombola(models.Model):
         through='UserTombola',
         blank=True
     )
-    createur=models.ForeignKey(get_user_model(),on_delete=models.CASCADE)
+    creer_par=models.ForeignKey(get_user_model(),on_delete=models.CASCADE)
     
 
     def __str__(self):
         return self.titre
     
-
 class UserTombola(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     tombola = models.ForeignKey("Tombola", on_delete=models.CASCADE)
@@ -239,7 +263,6 @@ class UserTombola(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.tombola.titre}"
     
-
 class Notification(models.Model):
     CHOICES=[
         ('a','alerte'),

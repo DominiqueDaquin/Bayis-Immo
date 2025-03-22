@@ -1,16 +1,19 @@
 from django.shortcuts import render
 from django.db.models import Q
+from django.conf import settings
+import requests
 from rest_framework import viewsets,status,generics
 
 from rest_framework.response import Response
 from rest_framework.decorators import action
+from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated,IsAuthenticatedOrReadOnly
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.exceptions import NotFound
 from authentification.permissions import IsAnnonceur,IsAnnonceurOrReadOnly
 from django.contrib.auth import get_user_model
 
-
+from django.utils import timezone
 
 
 from .models import (
@@ -23,7 +26,10 @@ from .models import (
     Tombola,
     Notification,
     Commentaire ,
-    Vue                   
+    Publicite,
+    UserTombola,
+    Vue, 
+                      
                      )
 from .serializers import (
     AnnonceSerializer,
@@ -35,7 +41,9 @@ from .serializers import (
     TombolaSerializer,
     NotificationSerializer,
     CommentaireSerializer,
-    VueSerializer
+    VueSerializer,
+    PubliciteSerializer,
+    UserTombolaSerializer
                           )
 
 class AnnonceView(viewsets.ModelViewSet):
@@ -157,7 +165,6 @@ class MessageView(viewsets.ModelViewSet):
             serializer = self.get_serializer(messages, many=True)
             return Response(serializer.data)
 
-
 class DiscussionView(viewsets.ModelViewSet):
     queryset = Discussion.objects.all()
     serializer_class = DiscussionSerializer
@@ -170,7 +177,6 @@ class DiscussionView(viewsets.ModelViewSet):
         serializer = self.get_serializer(discussions, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-
 class AnnonceFavorisView(viewsets.ModelViewSet):
 
     serializer_class=AnnonceFavorisSerializer
@@ -182,14 +188,57 @@ class AnnonceFavorisView(viewsets.ModelViewSet):
             user = self.request.user
             return AnnonceFavoris.objects.filter(user=user)
 
-
 class TombolaView(viewsets.ModelViewSet):
     queryset = Tombola.objects.all()
     serializer_class = TombolaSerializer
     permission_classes=[IsAnnonceurOrReadOnly]
 
+    @action(detail=False,methods=['get'],permission_classes=[IsAnnonceur],url_path="mes-tombolas")
+    def get_tombolas(self,request):
+        user=request.user
+        tombolas=Tombola.objects.filter(creer_par=user)
+        serializer=self.get_serializer(tombolas,many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='participer',permission_classes=[IsAuthenticated])
+    def participer(self, request, pk=None):
+            """
+            Action permettant à un utilisateur de participer à une tombola.
+            """
+            tombola = Tombola.objects.get(id=pk)
+
+            if tombola.statut != 'a':
+                return Response({"detail": "La tombola n'est pas active."}, status=status.HTTP_400_BAD_REQUEST)
+
+            if tombola.date_fin and tombola.date_fin < timezone.now().date():
+                return Response({"detail": "La tombola est terminée."}, status=status.HTTP_400_BAD_REQUEST)
+
+            user = request.user
+            if UserTombola.objects.filter(user=user, tombola=tombola).exists():
+                return Response({"detail": "Vous avez déjà participé à cette tombola."}, status=status.HTTP_400_BAD_REQUEST)
+
+            UserTombola.objects.create(user=user, tombola=tombola)
+
+            tombola.participants_actuel += 1
+            tombola.save()
+
+            return Response({"detail": "Vous avez participé à la tombola."}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'], url_path='verifier-participation',permission_classes=[IsAuthenticated])
+    def verifier_participation(self, request, pk=None):
+        """
+        Action permettant de vérifier si un utilisateur a participé à une tombola.
+        """
+        tombola = self.get_object()
+        user = request.user
+
+        if UserTombola.objects.filter(user=user, tombola=tombola).exists():
+            return Response({"detail": "Vous avez participé à cette tombola."}, status=status.HTTP_200_OK)
+
+        return Response({"detail": "Vous n'avez pas participé à cette tombola."}, status=status.HTTP_404_NOT_FOUND)
+
     def perform_create(self, serializer):
-            serializer.save(createur=self.request.user)
+            serializer.save(creer_par=self.request.user)
 
 class NotificationView(viewsets.ModelViewSet):
     queryset = Notification.objects.all().order_by('-created_at')
@@ -213,7 +262,6 @@ class NotificationView(viewsets.ModelViewSet):
         notification.save()
         return Response({'status': 'Notification marked as read'})
     
-
 class CommentaireView(viewsets.ModelViewSet):
     """
     ViewSet permettant de gérer les commentaires.
@@ -230,7 +278,6 @@ class CommentaireView(viewsets.ModelViewSet):
         """
         serializer.save(user=self.request.user)
 
-
 class NoteView(viewsets.ModelViewSet):
     """
     ViewSet permettant de gérer les notes attribuées aux annonces.
@@ -246,7 +293,6 @@ class NoteView(viewsets.ModelViewSet):
         Lorsqu'un utilisateur crée une note, elle est automatiquement associée à l'utilisateur connecté.
         """
         serializer.save(user=self.request.user)
-
 
 class VueCreateAPIView(generics.CreateAPIView):
     """
@@ -265,3 +311,35 @@ class VueCreateAPIView(generics.CreateAPIView):
 
         
         serializer.save(user=self.request.user, article=article)
+
+class PubliciteView(viewsets.ModelViewSet):
+    queryset = Publicite.objects.all().order_by('-date_creation') 
+    serializer_class = PubliciteSerializer
+    permission_classes = [IsAuthenticated,IsAnnonceurOrReadOnly]
+
+
+    @action(detail=False,methods=['get'],permission_classes=[IsAnnonceur],url_path="mes-publicites")
+    def get_publicites(self,request):
+        user=request.user
+        publicites=Publicite.objects.filter(user=user)
+        serializer=self.get_serializer(publicites,many=True)
+        return Response(serializer.data)
+
+    def perform_create(self, serializer):
+        """Assigner automatiquement l'utilisateur connecté lors de la création."""
+        serializer.save(user=self.request.user)
+
+class LygosPaymentView(APIView):
+    def post(self, request):
+        url = "https://api.lygosapp.com/v1/gateway"
+        headers = {
+            "api-key": settings.LYGOS_API_KEY,  
+            "Content-Type": "application/json",
+        }
+
+        try:
+            response = requests.post(url, json=request.data, headers=headers)
+            return Response(response.json(), status=response.status_code)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

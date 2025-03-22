@@ -27,6 +27,7 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
     name=models.CharField(max_length=255)
     phone=models.CharField(max_length=13)
+    photo=models.ImageField(blank=True,null=True,upload_to="profile/photos/")
 
     class Meta:
         verbose_name='Utilisateur'

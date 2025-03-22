@@ -12,6 +12,10 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
+import os
+from dotenv import load_dotenv
+
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -22,12 +26,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-hkjq94t!7+z7(hytbt)67k=ge6ggd(j-g@4uaqg0aey$80d*(#'
 
+load_dotenv(os.path.join(BASE_DIR, ".env"))
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 
-
+LYGOS_API_KEY=os.getenv("LYGOS_API_KEY")
 # Application definition
 
 INSTALLED_APPS = [
@@ -145,6 +151,11 @@ REST_FRAMEWORK={
         'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_PARSER_CLASSES': [
+        'rest_framework.parsers.JSONParser',
+        'rest_framework.parsers.MultiPartParser', 
+        'rest_framework.parsers.FormParser',       
+    ],
 }
 
 DJOSER={
@@ -165,18 +176,26 @@ SIMPLE_JWT={
 
 if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
+
 else:
     CORS_ALLOWED_ORIGINS = [
-    "https://mon-site-front.com",  
+    "http://192.168.1.108:5173",  
+    "http://localhost:5173"
     ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+CSRF_TRUSTED_ORIGINS=[
+    "http://192.168.1.108:5173",  
+    "https://0e88-41-202-220-2.ngrok-free.app",
+    "http://localhost:5173"
+]
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Mon API',
     'DESCRIPTION': 'Documentation détaillée de mon API.',
     'VERSION': '1.0.0',
-    'SERVE_INCLUDE_SCHEMA': False,  # Ne pas inclure de schéma dans l'interface de l'API
+    'SERVE_INCLUDE_SCHEMA': False,  
 }
 
 # LOGGING = {
