@@ -10,9 +10,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  server: {
-    allowedHosts: [
-      '5f68-102-244-221-115.ngrok-free.app' // Ajoutez votre host ngrok ici
-    ]
-  }
+  base: '/Bayis-Immo/',
+
 });
+
