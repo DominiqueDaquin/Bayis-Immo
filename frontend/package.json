@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "home": "https://DominiqueDaquin.github.io/Bayis-Immo",
+  "homepage": "https://DominiqueDaquin.github.io/Bayis-Immo",
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
