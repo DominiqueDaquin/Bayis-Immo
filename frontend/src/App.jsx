@@ -16,7 +16,7 @@ import Messagerie from './components/pages/messages';
 function App() {
     return (
         <AuthProvider>
-            <Router basename="/Bayis-Immo">
+            <Router>
                 <Routes>
                     {/* Routes publiques */}
                     <Route path="/" element={<SignupForm />} />
