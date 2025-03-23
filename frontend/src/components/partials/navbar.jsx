@@ -51,8 +51,8 @@ export default function SimpleNavbar() {
   // Liens spécifiques pour les utilisateurs normaux
   const normalUserLinks = [
     { label: "Favoris", href: "/favorites", icon: <FaHeart /> },
-    { label: "Messages", href: "#", icon: <FaEnvelope /> },
-    { label: "Notifications", href: "#", icon: <FaBell /> },
+    { label: "Messages", href: "/messages", icon: <FaEnvelope /> },
+    { label: "Notifications", href: "/notifications", icon: <FaBell /> },
     { label: "Paramètres", href: "/parametres", icon: <FaCog /> },
   ]
 

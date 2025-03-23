@@ -15,14 +15,22 @@ export default defineConfig({
     assetsDir: 'assets',
     emptyOutDir: true
   },
-  // server: {
-  //   historyApiFallback: true,
-  //   // Uniquement si vous avez besoin de proxy vers un backend
-  //   proxy: {
-  //     '/api': {
-  //       target: 'http://localhost:3000',
-  //       changeOrigin: true
-  //     }
-  //   }
-  // }
+  server: {
+    proxy: {
+      '/api': {
+        target: 'https://dakicodeur.pythonanywhere.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      }
+    }
+  },
+  preview: {
+    proxy: {
+      '/api': {
+        target: 'https://dakicodeur.pythonanywhere.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      }
+    }
+  }
 });

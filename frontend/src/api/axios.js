@@ -1,8 +1,8 @@
 import axios from 'axios';
 import { baseUrl } from '@/config';
-
+const apiBaseUrl = baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
 const axiosInstance = axios.create({
-  baseURL: baseUrl,
+  baseURL: apiBaseUrl,
   headers: {
     'Content-Type': 'application/json',
   },
