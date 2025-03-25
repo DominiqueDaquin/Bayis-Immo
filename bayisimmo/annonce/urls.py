@@ -1,6 +1,6 @@
 from django.urls import path,include
 from rest_framework.routers import DefaultRouter
-from .views import AnnonceView,MediaView,MessageView,DiscussionView,AnnonceFavorisView,TombolaView,NotificationView,CommentaireView,NoteView,VueCreateAPIView,PubliciteView,LygosPaymentView
+from .views import AnnonceView,MediaView,MessageView,DiscussionView,AnnonceFavorisView,TombolaView,NotificationView,CommentaireView,NoteView,VueCreateAPIView,PubliciteView,LygosPaymentView,UnreadCountsAPIView
 
 router=DefaultRouter()
 router.register(r'annonces',AnnonceView)
@@ -18,4 +18,5 @@ urlpatterns=[
 path('',include(router.urls)),
 path('vues/', VueCreateAPIView.as_view(), name='vue-create'),
 path("paiement/lygos/", LygosPaymentView.as_view(), name="proxy-to-lygos"),
+path("statistiques/",UnreadCountsAPIView.as_view()),
 ]

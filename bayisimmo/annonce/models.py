@@ -6,6 +6,8 @@ from datetime import timedelta
 from django.core.exceptions import ValidationError
 from django.utils.timezone import now
 from django.db.models import Avg
+from django.dispatch import receiver
+from django.db.models.signals import post_save
 User=get_user_model()
 class Media(models.Model):
     """ Un média représente tout ce qui est photo ou vidéo attaché à une annonce """
@@ -63,23 +65,7 @@ class Annonce(models.Model):
     def __str__(self):
         return f"{self.titre}"
 
-class Discussion(models.Model):
-    """ Une discussion correspond à une conversation démarrée entre deux personnes """
-    creer_le = models.DateTimeField(auto_now_add=True)
-    createur1 = models.ForeignKey(
-        get_user_model(), on_delete=models.SET_NULL, null=True, related_name="discussions_initiees"
-    )
-    createur2 = models.ForeignKey(
-        get_user_model(), on_delete=models.SET_NULL, null=True, related_name="discussions_recues"
-    )
-    un_read=models.BooleanField(default=False)
-    class Meta:
-        unique_together = ('createur1', 'createur2')  
-        ordering = ['-creer_le']  
 
-    def __str__(self):
-        return f"Discussion entre {self.createur1} et {self.createur2}"
-    
 class Message(models.Model):
     """ Message pour les discussions  """
     CHOICES=[
@@ -93,7 +79,9 @@ class Message(models.Model):
     envoyer_le=models.DateTimeField(auto_now_add=True)
     status=models.CharField(max_length=1,choices=CHOICES,default='e')
     destinataire=models.ForeignKey(get_user_model(),on_delete=models.CASCADE)
-    discussion=models.ForeignKey(Discussion,on_delete=models.CASCADE,related_name="messages")
+    discussion=models.ForeignKey("Discussion",on_delete=models.CASCADE,related_name="messages")
+
+
 
     def temps_ecoule(self):
         """
@@ -134,6 +122,32 @@ class Message(models.Model):
     def __str__(self):
         return f'message {self.id}'
     
+class Discussion(models.Model):
+    """ Une discussion correspond à une conversation démarrée entre deux personnes """
+    creer_le = models.DateTimeField(auto_now_add=True)
+    createur1 = models.ForeignKey(
+        get_user_model(), on_delete=models.SET_NULL, null=True, related_name="discussions_initiees"
+    )
+    createur2 = models.ForeignKey(
+        get_user_model(), on_delete=models.SET_NULL, null=True, related_name="discussions_recues"
+    )
+    un_read=models.BooleanField(default=False)
+    class Meta:
+        unique_together = ('createur1', 'createur2')  
+        ordering = ['-creer_le']  
+
+    def update_unread_status(self):
+        """Met à jour le statut un_read en fonction des messages non lus"""
+        unread_messages = self.messages.filter(status='e')  
+        self.un_read = unread_messages.exists()
+        self.save()
+
+ 
+
+    def __str__(self):
+        return f"Discussion entre {self.createur1} et {self.createur2}"
+    
+
 class AnnonceFavoris(models.Model):
     user=models.ForeignKey(get_user_model(),on_delete=models.CASCADE)
     annonce=models.ForeignKey(Annonce,on_delete=models.CASCADE)
@@ -282,3 +296,11 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.user} - {self.message[:50]}"
+    
+
+@receiver(post_save, sender=Message)
+def update_discussion_unread(sender, instance, created, **kwargs):
+        if created:  
+            discussion = instance.discussion
+            discussion.un_read = True
+            discussion.save()

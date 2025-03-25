@@ -131,9 +131,15 @@ class DiscussionSerializer(serializers.ModelSerializer):
         many=True
         
     )
+    unread_count = serializers.SerializerMethodField()
     class Meta:
         model=Discussion
-        fields=['id','creer_le','createur1','createur2','messages','name1','name2','last_message','un_read']
+        fields=['id','creer_le','createur1','createur2','messages','name1','name2','last_message','un_read','unread_count']
+
+    def get_unread_count(self, obj):
+        if hasattr(obj, 'unread_count'):
+            return obj.unread_count
+        return obj.messages.filter(status='e').count()
 
     def get_name1(self, obj):
         return obj.createur1.name if obj.createur1 else None

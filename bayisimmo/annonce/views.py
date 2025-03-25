@@ -4,8 +4,10 @@ from django.conf import settings
 import requests
 from rest_framework import viewsets,status,generics
 from django.core.exceptions import ObjectDoesNotExist
-
-
+from django.core.cache import cache
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework import status, viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.views import APIView
@@ -14,7 +16,7 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.exceptions import NotFound
 from authentification.permissions import IsAnnonceur,IsAnnonceurOrReadOnly
 from django.contrib.auth import get_user_model
-
+from django.db import models
 from django.utils import timezone
 
 
@@ -199,6 +201,8 @@ class MessageView(viewsets.ModelViewSet):
             serializer = self.get_serializer(messages, many=True)
             return Response(serializer.data)
 
+
+
 class DiscussionView(viewsets.ModelViewSet):
     queryset = Discussion.objects.all()
     serializer_class = DiscussionSerializer
@@ -207,8 +211,42 @@ class DiscussionView(viewsets.ModelViewSet):
     def mes_discussions(self, request):
         """Retourne toutes les discussions d'un utilisateur authentifié"""
         user = request.user
-        discussions = Discussion.objects.filter(createur1=user) | Discussion.objects.filter(createur2=user)
+        discussions = Discussion.objects.filter(
+            models.Q(createur1=user) | models.Q(createur2=user)
+        )
+        
+        for discussion in discussions:
+            discussion.unread_count = discussion.messages.filter(
+                destinataire=user,
+                status='e'  
+            ).count()
+            discussion.un_read = discussion.unread_count > 0
+
         serializer = self.get_serializer(discussions, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get','patch'], url_path='marquer-comme-lus')
+    def discussion_messages(self, request, pk=None):
+        """Récupère les messages d'une discussion et marque comme lus"""
+        discussion = self.get_object()
+        user = request.user
+
+       
+        Message.objects.filter(
+            discussion=discussion,
+            destinataire=user,
+            status='e'  
+        ).update(status='r')
+
+        
+        discussion.un_read = discussion.messages.filter(
+            destinataire=user,
+            status='e'
+        ).exists()
+        discussion.save()
+
+        messages = discussion.messages.all().order_by('envoyer_le')
+        serializer = MessageSerializer(messages, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 class AnnonceFavorisView(viewsets.ModelViewSet):
@@ -413,3 +451,29 @@ class LygosPaymentView(APIView):
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+class UnreadCountsAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        cache_key = f'unread_counts_{user.id}'
+        data = cache.get(cache_key)
+        
+        if data is None:
+            # Calculer les valeurs si pas en cache
+            data = {
+                'unread_discussions': Discussion.objects.filter(
+                    (Q(createur1=user) | Q(createur2=user)) &
+                    Q(messages__destinataire=user) &
+                    Q(messages__status='e')
+                ).distinct().count(),
+                'unread_notifications': Notification.objects.filter(
+                    user=user,
+                    is_read=False
+                ).count()
+            }
+            cache.set(cache_key, data, timeout=60)  # Cache pendant 60 secondes
+        
+        return Response(data, status=status.HTTP_200_OK)
