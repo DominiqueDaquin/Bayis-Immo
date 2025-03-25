@@ -72,7 +72,7 @@ class Discussion(models.Model):
     createur2 = models.ForeignKey(
         get_user_model(), on_delete=models.SET_NULL, null=True, related_name="discussions_recues"
     )
-
+    un_read=models.BooleanField(default=False)
     class Meta:
         unique_together = ('createur1', 'createur2')  
         ordering = ['-creer_le']  

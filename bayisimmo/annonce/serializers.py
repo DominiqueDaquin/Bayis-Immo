@@ -112,7 +112,6 @@ class AnnonceSerializer(serializers.ModelSerializer):
     # def get_mes_vues(self,obj):
     #     return obj.nombre_vues
 
-
 class MessageSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -134,7 +133,7 @@ class DiscussionSerializer(serializers.ModelSerializer):
     )
     class Meta:
         model=Discussion
-        fields=['id','creer_le','createur1','createur2','messages','name1','name2','last_message']
+        fields=['id','creer_le','createur1','createur2','messages','name1','name2','last_message','un_read']
 
     def get_name1(self, obj):
         return obj.createur1.name if obj.createur1 else None
@@ -144,10 +143,9 @@ class DiscussionSerializer(serializers.ModelSerializer):
         return obj.createur2.name if obj.createur2 else None
     
     def get_last_message(self, obj):
-        # Assurez-vous d'avoir une relation 'messages' dans Discussion
-        last_message = obj.messages.order_by('-envoyer_le').first()  # Trie par 'envoyer_le' pour récupérer le dernier
-        return last_message.texte if last_message else None
 
+        last_message = obj.messages.order_by('-envoyer_le').first()  
+        return last_message.texte if last_message else None
 
 class AnnonceFavorisSerializer(serializers.ModelSerializer):
     annonce = AnnonceSerializer(read_only=True)
@@ -161,7 +159,6 @@ class AnnonceFavorisSerializer(serializers.ModelSerializer):
         model = AnnonceFavoris
         fields = ['id', 'user', 'annonce', 'annonce_id']
 
-
 class NoteSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -171,7 +168,6 @@ class NoteSerializer(serializers.ModelSerializer):
     def get_moyenne(self,obj):
         return obj.moyenne
     
-
 class TombolaSerializer(serializers.ModelSerializer):
     participants = serializers.PrimaryKeyRelatedField(
         many=True, queryset=User.objects.all(), required=False
