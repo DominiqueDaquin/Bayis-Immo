@@ -1,8 +1,10 @@
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from django.db.models import Q
 from django.conf import settings
 import requests
 from rest_framework import viewsets,status,generics
+from django.core.exceptions import ObjectDoesNotExist
+
 
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -80,18 +82,50 @@ class AnnonceView(viewsets.ModelViewSet):
 
         return Response(serializer.data)
     
-    @action(detail=True,methods=['get'],url_path='note')
-    def get_note(self,request,pk=None):
+    @action(detail=True, methods=['get'], url_path='note')
+    def get_note(self, request, pk=None):
         """
-        Recupère la note moyenne d'un article
+        Récupère la note moyenne d'un article ainsi que la note donnée par l'utilisateur
         """
+        user = request.user
+        annonce = get_object_or_404(Annonce, pk=pk) 
+        valeur=0
+        moyenne=0
         try:
-              annonce=Note.objects.filter(annonce=pk)
-              print("yes")
+            user_note = Note.objects.get(user=user, annonce=annonce)
+            user_note_valeur = user_note.valeur
+            valeur=user_note_valeur
+            moyenne = user_note.moyenne or 0
+        except Note.DoesNotExist:
+            valeur = 0  
+
+            
+        
+        
+        nombre_avis = Note.objects.filter(annonce=annonce).count()
+
+        return Response({
+            "user_note": valeur,
+            "note": moyenne,
+            "avis": nombre_avis
+        })
+    @action(detail=True,methods=['get'],url_path='is-favoris')
+    def is_favoris(self,request,pk=None):
+        """
+        Diq si une annonce est dans les favoris de l'utilisateur
+        """
+        user=request.user
+        try:
+              is_favoris=False
+              try:
+                favori = AnnonceFavoris.objects.get(annonce=pk, user=user)
+                is_favoris=True
+              except ObjectDoesNotExist:
+                favori = None 
               
-              note=annonce[0].moyenne
-              print("yes2")
-              return Response({"note":note,"avis":len(list(annonce))})
+              
+              
+              return Response({"is_favoris":is_favoris})
               
         except Exception as e:
               print(e)
@@ -181,8 +215,44 @@ class AnnonceFavorisView(viewsets.ModelViewSet):
 
     serializer_class=AnnonceFavorisSerializer
     queryset=AnnonceFavoris.objects.all()
-
     permission_classes=[IsAuthenticated]
+
+    @action(detail=False,methods=['get'],url_path='mes-favoris')
+    def get_favoris(self,request):
+        user=request.user
+        favoris=AnnonceFavoris.objects.filter(user=user)
+        serializer=self.get_serializer(favoris,many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['delete'], url_path='supprimer-favori')
+    def delete_favori(self, request,pk=None):
+        """
+        Supprime un favori spécifique pour l'utilisateur connecté
+        Nécessite l'ID de l'annonce dans les paramètres de requête
+        """
+        annonce_id = pk
+        
+        if not annonce_id:
+            return Response(
+                {"detail": "L'ID de l'annonce est requis"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            favori = AnnonceFavoris.objects.get(
+                user=request.user, 
+                annonce_id=annonce_id
+            )
+            favori.delete()
+            return Response(
+                {"detail": "Favori supprimé avec succès"},
+                status=status.HTTP_204_NO_CONTENT
+            )
+        except AnnonceFavoris.DoesNotExist:
+            return Response(
+                {"detail": "Favori non trouvé"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
     def get_queryset(self):
             user = self.request.user

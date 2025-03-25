@@ -5,7 +5,7 @@ from django.utils import timezone
 from datetime import timedelta
 from django.core.exceptions import ValidationError
 from django.utils.timezone import now
-
+from django.db.models import Avg
 User=get_user_model()
 class Media(models.Model):
     """ Un média représente tout ce qui est photo ou vidéo attaché à une annonce """
@@ -64,13 +64,21 @@ class Annonce(models.Model):
         return f"{self.titre}"
 
 class Discussion(models.Model):
-    """ une discussion correspond a une conversation demarrer en 2 personnes"""
-    creer_le=models.DateTimeField(auto_now_add=True)
-    createur1=models.ForeignKey(get_user_model(),on_delete=models.SET_NULL,null=True,related_name="discussions_initiees")
-    createur2=models.ForeignKey(get_user_model(),on_delete=models.SET_NULL,null=True,related_name="discussion_recues")
+    """ Une discussion correspond à une conversation démarrée entre deux personnes """
+    creer_le = models.DateTimeField(auto_now_add=True)
+    createur1 = models.ForeignKey(
+        get_user_model(), on_delete=models.SET_NULL, null=True, related_name="discussions_initiees"
+    )
+    createur2 = models.ForeignKey(
+        get_user_model(), on_delete=models.SET_NULL, null=True, related_name="discussions_recues"
+    )
+
+    class Meta:
+        unique_together = ('createur1', 'createur2')  
+        ordering = ['-creer_le']  
 
     def __str__(self):
-        return f" Discussion de {self.createur1} et {self.createur2} "
+        return f"Discussion entre {self.createur1} et {self.createur2}"
     
 class Message(models.Model):
     """ Message pour les discussions  """
@@ -150,13 +158,8 @@ class Note(models.Model):
 
     @property
     def moyenne(self):
-        notes=Note.objects.filter(annonce=self.annonce)
-        somme=0
-        for note in list(notes):
-            somme=note.valeur+somme
-        
-        moyenne= somme / len(list(note))
-        return moyenne
+        moyenne = Note.objects.filter(annonce=self.annonce).aggregate(Avg('valeur'))['valeur__avg']
+        return moyenne if moyenne is not None else 0  
     
 class Commentaire(models.Model):
     user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)

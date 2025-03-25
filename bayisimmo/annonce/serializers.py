@@ -26,18 +26,87 @@ class MediaSerializer(serializers.ModelSerializer):
 
     
 class AnnonceSerializer(serializers.ModelSerializer):
-
-
-    creer_par=serializers.SlugRelatedField(
+    creer_par = serializers.SlugRelatedField(
         read_only=True,
         slug_field="name"
     )
-    photos = MediaSerializer(many=True, read_only=True)
-    #mes_vues=serializers.SerializerMethodField()
+    photos = MediaSerializer(many=True, required=False)  # Permet d'afficher les photos existantes
+    photos_upload = serializers.ListField(
+        child=serializers.ImageField(),
+        write_only=True,
+        required=False
+    )  
+    avis=serializers.SerializerMethodField()
+    moyenne=serializers.SerializerMethodField()
+
     class Meta:
-        model=Annonce
-        fields=['id','titre','description','creer_le','creer_par','status','photos','localisation','prix','vues']
-        read_only_fields=['vues']
+        model = Annonce
+        fields = [
+            'id', 'titre', 'description', 'creer_le', 'creer_par', 'status',
+            'photos', 'photos_upload', 'localisation', 'prix', 'vues','avis','moyenne'
+        ]
+        read_only_fields = ['vues']
+
+    def create(self, validated_data):
+        """ Création d'une annonce avec un tableau de photos """
+        photos_data = validated_data.pop('photos_upload', [])  
+        print(f"Nombre de photos reçues : {len(photos_data)}")
+        
+        annonce = Annonce.objects.create(**validated_data)
+        print("annonce créée......................................")
+        
+        # Créer une liste pour stocker les médias
+        media_list = []
+        for photo in photos_data:
+            print(f"Traitement de la photo : {photo}")
+            media = Media.objects.create(photo=photo, type='photo')  
+            media_list.append(media)
+        
+        # Utiliser set() avec tous les médias à la fois
+        if media_list:
+            annonce.photos.set(media_list)
+            print(f"{len(media_list)} photos ajoutées.........") 
+        else:
+            print("Aucune photo à ajouter")
+
+        return annonce
+
+    def update(self, instance, validated_data):
+        """ Mise à jour d'une annonce avec un tableau de photos """
+        photos_data = validated_data.pop('photos_upload', None)
+
+        # Mettre à jour les attributs de l'instance
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        # Gestion des photos
+        if photos_data is not None:
+            # Supprimer les anciennes photos
+            instance.photos.clear()  
+            
+            # Créer et ajouter les nouvelles photos
+            media_list = []
+            for photo in photos_data:
+                media = Media.objects.create(photo=photo, type='photo')
+                media_list.append(media)
+            
+            # Utiliser set() avec tous les médias à la fois
+            if media_list:
+                instance.photos.set(media_list)
+
+        return instance
+
+
+    def get_moyenne(self, obj):
+        """Récupère la moyenne des notes depuis une instance de Note associée à l'annonce."""
+        note = Note.objects.filter(annonce=obj).first()  
+        return note.moyenne if note else 0  
+
+    def get_avis(self, obj):
+        """Récupère la moyenne des notes depuis une instance de Note associée à l'annonce."""
+        avis = Note.objects.filter(annonce=obj).count() 
+        return avis or 0  
 
     
     # def get_mes_vues(self,obj):
@@ -81,12 +150,16 @@ class DiscussionSerializer(serializers.ModelSerializer):
 
 
 class AnnonceFavorisSerializer(serializers.ModelSerializer):
-
-    
+    annonce = AnnonceSerializer(read_only=True)
+    annonce_id = serializers.PrimaryKeyRelatedField(
+        queryset=Annonce.objects.all(), 
+        source='annonce', 
+        write_only=True
+    )
 
     class Meta:
-        model=AnnonceFavoris
-        fields=['id','user','annonce']
+        model = AnnonceFavoris
+        fields = ['id', 'user', 'annonce', 'annonce_id']
 
 
 class NoteSerializer(serializers.ModelSerializer):
