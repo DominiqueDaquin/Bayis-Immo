@@ -26,6 +26,7 @@ import {
   useToast,
   Spinner,
   useColorModeValue,
+ 
 } from "@chakra-ui/react";
 import {
   FiSearch,
@@ -123,7 +124,8 @@ export default function Chat() {
       }
     };
 
-    fetchMessages();
+    // fetchMessages();
+    setTimeout(fetchMessages,2000)
   }, [selectedContact, toast,messages]);
 
   // Envoyer un message
@@ -162,7 +164,7 @@ export default function Chat() {
           w="350px"
           borderRight="1px"
           borderColor="gray.200"
-          bg={bgColor}
+          bg={sidebarBg}
           display={{ base: "none", md: "block" }}
           h="80vh"
           overflowY="hidden"
@@ -171,9 +173,9 @@ export default function Chat() {
         </Box>
 
         {/* Zone principale du chat */}
-        <Flex flex="1" direction="column" bg={bgColor} h="80vh" overflow="hidden">
+        <Flex flex="1" direction="column" bg={sidebarBg} h="80vh" overflow="hidden">
           {/* En-tête */}
-          <Flex p={4} align="center" borderBottom="1px" borderColor="gray.200" bg={bgColor}>
+          <Flex p={4} align="center" borderBottom="1px" borderColor="gray.200" bg={sidebarBg}>
             <IconButton
               icon={<FiMenu />}
               variant="ghost"
@@ -210,7 +212,7 @@ export default function Chat() {
             overflowY="auto"
             spacing={4}
             align="stretch"
-            bg={bgColor}
+            bg={sidebarBg}
             css={{
               "&::-webkit-scrollbar": {
                 width: "4px",
@@ -254,7 +256,7 @@ export default function Chat() {
           </VStack>
 
           {/* Zone de saisie */}
-          <Flex p={4} borderTop="1px" borderColor="gray.200" bg={bgColor}>
+          <Flex p={4} borderTop="1px" borderColor="gray.200" bg={sidebarBg}>
             <HStack w="full" spacing={2}>
               {/* <IconButton icon={<FiPaperclip />} variant="ghost" colorScheme="blue" aria-label="Joindre un fichier" />
               <IconButton icon={<FiImage />} variant="ghost" colorScheme="blue" aria-label="Envoyer une image" /> */}

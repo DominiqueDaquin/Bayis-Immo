@@ -71,14 +71,11 @@ const PropertyForm = ({ property, onSubmit, onCancel }) => {
         return true
       })
 
-      console.log("validfiles:",validFiles);
       
       // Création des URLs pour la prévisualisation
       const newPreviews = validFiles.map(file => URL.createObjectURL(file))
       
       setUploadedImages(prev => [...prev, ...newPreviews])
-      console.log("image uploader",uploadedImages);
-      
       setFormData(prev => ({
         ...prev,
         photos_upload: [...prev.photos_upload, ...validFiles]
@@ -105,37 +102,37 @@ const PropertyForm = ({ property, onSubmit, onCancel }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    
-    // Vérification des champs requis
+  
+    // Vérification des champs
     if (!formData.titre || !formData.description || !formData.localisation) {
-      toast({
-        title: "Champs manquants",
-        description: "Veuillez remplir tous les champs obligatoires",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      })
+      toast({ title: "Champs manquants", status: "error" })
       return
     }
-
-    // Création du FormData pour l'envoi
+  
+    // 1. Construction du FormData
     const formDataToSend = new FormData()
+    
+    // 2. Ajout des champs texte
     formDataToSend.append("titre", formData.titre)
     formDataToSend.append("description", formData.description)
     formDataToSend.append("prix", formData.prix)
     formDataToSend.append("localisation", formData.localisation)
     formDataToSend.append("status", formData.status)
-console.log(formDataToSend);
-
-    // Ajout des images
-    formData.photos_upload.forEach((file, index) => {
-      formDataToSend.append(`images[${index}]`, file)
+  
+    // 3. Ajout des images (format adapté à Django)
+    formData.photos_upload.forEach(file => {
+      formDataToSend.append("photos_upload", file) // Nom exact du champ attendu
     })
-    console.log("Données à envoyer:",formDataToSend);
-    console.log(formData);
+  const my_data={}
+
+    for (let [key, value] of formDataToSend.entries()) {
+      
+      my_data[key]=value
+    }
+    console.log(my_data);
     
 
-    onSubmit(formDataToSend)
+    onSubmit(my_data) 
   }
 
   return (

@@ -196,9 +196,20 @@ export default function Home() {
   //     const cards = gsap.utils.toArray(".property-card");
       
   //     cards.forEach((card, i) => {
-  //       gsap.from(card, {
+  //       gsap.fromTo(card, {
   //         opacity: 0,
   //         y: 30,
+  //         duration: 0.6,
+  //         delay: i * 0.1,
+  //         scrollTrigger: {
+  //           trigger: card,
+  //           start: "top 0%",
+  //           toggleActions: "play none none none",
+  //           once: true
+  //         }
+  //       },{
+  //         opacity:1,
+  //         y:0,
   //         duration: 0.6,
   //         delay: i * 0.1,
   //         scrollTrigger: {

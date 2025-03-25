@@ -23,136 +23,175 @@ import {
   Divider,
   useColorMode,
   useColorModeValue,
-  Stack,
-  Icon,
+  Flex,
 } from '@chakra-ui/react';
 import {
   CheckIcon,
   EditIcon,
-  MoonIcon,
-  SunIcon,
-  BellIcon,
-  LockIcon,
   SettingsIcon,
+  SunIcon,
+  LockIcon,
 } from '@chakra-ui/icons';
 import axiosInstance from '@/api/axios'; 
 import { useAuth } from '@/hooks/useAuth'; 
 
+// Composant Section Paramètres réutilisable
+const SettingsSection = ({ icon, title, children }) => (
+  <Card 
+    width="100%" 
+    bg={useColorModeValue("white", "neutral.800")}
+    boxShadow="md"
+  >
+    <CardHeader>
+      <Flex alignItems="center" gap={2}>
+        {icon}
+        <Heading size="md">{title}</Heading>
+      </Flex>
+    </CardHeader>
+    <CardBody>
+      {children}
+    </CardBody>
+  </Card>
+);
+
+// Composant Paramètre individuel
+const SettingItem = ({ label, description, control }) => (
+  <Box>
+    <Flex 
+      flexDirection={["column", "row"]} 
+      justifyContent="space-between" 
+      alignItems={["flex-start", "center"]} 
+      gap={2}
+    >
+      <Box flex={1}>
+        <Text fontWeight="medium">{label}</Text>
+        {description && (
+          <Text fontSize="sm" color="gray.500">
+            {description}
+          </Text>
+        )}
+      </Box>
+      <Box>
+        {control}
+      </Box>
+    </Flex>
+    <Divider my={4} />
+  </Box>
+);
+
 export default function Settings() {
-  const { userDetail, isAuthenticated } = useAuth(); 
-  const [imageUrl, setImageUrl] = useState(userDetail?.photo || ''); 
-  const [name, setName] = useState(userDetail?.name || ''); 
-  const [email, setEmail] = useState(userDetail?.email || ''); 
-  const [phone, setPhone] = useState(userDetail?.phone || ''); 
-  const fileInputRef = useRef(null);
-  const toast = useToast();
-  const { colorMode, toggleColorMode } = useColorMode();
-    // Couleurs du thème
-    const bgColor = useColorModeValue("neutral.50", "neutral.900")
-    const sidebarBg = useColorModeValue("white", "neutral.800")
-    const headerBg = useColorModeValue("white", "neutral.800")
-    const borderColor = useColorModeValue("neutral.200", "neutral.700")
-    const textColor = useColorModeValue("neutral.800", "neutral.100")
+    // États et hooks
+    const { userDetail } = useAuth();
+    const [formValues, setFormValues] = useState({
+      imageUrl: '',
+      name: '',
+      email: '',
+      phone: ''
+    });
+    const fileInputRef = useRef(null);
+    const toast = useToast();
+    const { colorMode, toggleColorMode } = useColorMode();
   
-
-  // Mettre à jour les champs lorsque userDetail change
-  useEffect(() => {
-    if (userDetail) {
-      setImageUrl(userDetail.photo || '');
-      setName(userDetail.name || '');
-      setEmail(userDetail.email || '');
-      setPhone(userDetail.phone || '');
-    }
-  }, [userDetail]);
-
-  // Gérer l'upload de la photo de profil
-  const handleImageUpload = async (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      const formData = new FormData();
-      formData.append('photo', file);
-
-      try {
-        const response = await axiosInstance.patch(`/auth/users/${userDetail.id}/`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        });
-
-        setImageUrl(URL.createObjectURL(file)); // Afficher la nouvelle image
-        toast({
-          title: "Photo de profil mise à jour",
-          status: "success",
-          duration: 3000,
-          isClosable: true,
-        });
-      } catch (error) {
-        toast({
-          title: "Erreur lors de la mise à jour de la photo",
-          description: error.response?.data?.detail || "Une erreur s'est produite.",
-          status: "error",
-          duration: 5000,
-          isClosable: true,
+    // Thème
+    const theme = {
+      bgColor: useColorModeValue("neutral.50", "neutral.900"),
+      sidebarBg: useColorModeValue("white", "neutral.800"),
+      textColor: useColorModeValue("neutral.800", "neutral.100")
+    };
+  
+    // Effets
+    useEffect(() => {
+      if (userDetail) {
+        setFormValues({
+          imageUrl: userDetail.photo || '',
+          name: userDetail.name || '',
+          email: userDetail.email || '',
+          phone: userDetail.phone || ''
         });
       }
-    }
-  };
-
-  // Mettre à jour les informations de l'utilisateur
-  const handleUpdateProfile = async () => {
-    try {
-      const response = await axiosInstance.patch(`/auth/users/${userDetail.id}/`, {
-        name,
-        email,
-        phone,
-      });
-
+    }, [userDetail]);
+  
+    // Handlers
+    const handleImageUpload = async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+  
+      const formData = new FormData();
+      formData.append('photo', file);
+  
+      try {
+        await axiosInstance.patch(`/auth/users/${userDetail.id}/`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        
+        setFormValues(prev => ({ ...prev, imageUrl: URL.createObjectURL(file) }));
+        showToast("Photo de profil mise à jour", "success");
+      } catch (error) {
+        showToast(
+          "Erreur lors de la mise à jour de la photo",
+          "error",
+          error.response?.data?.detail
+        );
+      }
+    };
+  
+    const handleUpdateProfile = async () => {
+      try {
+        await axiosInstance.patch(`/auth/users/${userDetail.id}/`, {
+          name: formValues.name,
+          email: formValues.email,
+          phone: formValues.phone,
+        });
+        showToast("Profil mis à jour", "success");
+      } catch (error) {
+        showToast(
+          "Erreur lors de la mise à jour du profil",
+          "error",
+          error.response?.data?.detail
+        );
+      }
+    };
+  
+    const showToast = (title, status, description) => {
       toast({
-        title: "Profil mis à jour",
-        status: "success",
-        duration: 3000,
+        title,
+        status,
+        description,
+        duration: status === "error" ? 5000 : 3000,
         isClosable: true,
       });
-    } catch (error) {
-      toast({
-        title: "Erreur lors de la mise à jour du profil",
-        description: error.response?.data?.detail || "Une erreur s'est produite.",
-        status: "error",
-        duration: 5000,
-        isClosable: true,
-      });
-    }
-  };
+    };
 
-  return (
-    <Container maxW="container.xl" py={8}>
-      <VStack spacing={8} align="stretch">
-        <Heading size="lg">Paramètres</Heading>
+    return (
+      <Container 
+        maxW="container.xl" 
+        px={[2, 4]} 
+        py={[4, 8]}
+      >
+        <VStack 
+          spacing={[4, 8]} 
+          align="stretch" 
+          width="100%"
+        >
+          <Heading size="lg" px={[2, 0]}>Paramètres</Heading>
 
-        {/* Section Profil Personnel */}
-        <Card width={["100%", "70%"]} bg={sidebarBg}>
-          <CardHeader>
-            <HStack>
-              <Icon as={SettingsIcon} />
-              <Heading size="md">Profil Personnel</Heading>
-            </HStack>
-          </CardHeader>
-          <CardBody>
-            <Stack direction={['column', 'row']} spacing={8} align="flex-start">
+          {/* Section Profil Personnel */}
+          <SettingsSection icon={<SettingsIcon />} title="Profil Personnel">
+            <VStack spacing={6} align="stretch" width="100%">
               {/* Photo de profil */}
-              <VStack spacing={4} align="center">
+              <VStack spacing={4} align="center" width="100%">
                 <Box position="relative">
                   <Avatar
-                    size="2xl"
-                    name={name}
-                    src={imageUrl}
+                    size={["xl", "2xl"]}
+                    name={formValues.name}
+                    src={formValues.imageUrl}
                     bg="green.400"
                   >
                     <AvatarBadge
                       as={IconButton}
-                      size="sm"
+                      size="xs"
                       rounded="full"
-                      top="-10px"
+                      top="-5px"
                       colorScheme="green"
                       aria-label="Verified account"
                       icon={<CheckIcon />}
@@ -181,120 +220,133 @@ export default function Settings() {
               </VStack>
 
               {/* Informations personnelles */}
-              <VStack spacing={4} flex={1}>
+              <VStack spacing={4} width="100%">
                 <FormControl>
                   <FormLabel>Nom Complet</FormLabel>
-                  <Input value={name} onChange={(e) => setName(e.target.value)} />
+                  <Input 
+                    value={formValues.name} 
+                    onChange={(e) => setFormValues(prev => ({ ...prev, name: e.target.value }))} 
+                    size={["md", "lg"]}
+                  />
                 </FormControl>
+                
                 <FormControl>
                   <FormLabel>Email</FormLabel>
-                  <Input value={email} onChange={(e) => setEmail(e.target.value)} type="email" />
+                  <Input 
+                    value={formValues.email} 
+                    onChange={(e) => setFormValues(prev => ({ ...prev, email: e.target.value }))} 
+                    type="email" 
+                    size={["md", "lg"]}
+                  />
                 </FormControl>
+                
                 <FormControl>
                   <FormLabel>Téléphone</FormLabel>
-                  <Input value={phone} onChange={(e) => setPhone(e.target.value)} type="tel" />
+                  <Input 
+                    value={formValues.phone} 
+                    onChange={(e) => setFormValues(prev => ({ ...prev, phone: e.target.value }))} 
+                    type="tel" 
+                    size={["md", "lg"]}
+                  />
                 </FormControl>
-                <Button colorScheme="blue" onClick={handleUpdateProfile}>
+                
+                <Button 
+                  colorScheme="blue" 
+                  onClick={handleUpdateProfile}
+                  width="100%"
+                  size={["md", "lg"]}
+                  mt={2}
+                >
                   Mettre à jour le profil
                 </Button>
               </VStack>
-            </Stack>
-          </CardBody>
-        </Card>
-
-        {/* Section Préférences */}
-        <Card width={["100%", "70%"]} bg={sidebarBg}>
-          <CardHeader>
-            <HStack>
-              <Icon as={SunIcon} />
-              <Heading size="md">Préférences du Site</Heading>
-            </HStack>
-          </CardHeader>
-          <CardBody>
-            <VStack spacing={4} align="stretch">
-              <HStack justify="space-between">
-                <VStack align="start" spacing={0}>
-                  <Text fontWeight="medium">Thème</Text>
-                  <Text fontSize="sm" color="gray.500">
-                    Choisissez entre le mode clair et sombre
-                  </Text>
-                </VStack>
-                <Switch
-                  isChecked={colorMode === 'dark'}
-                  onChange={toggleColorMode}
-                />
-              </HStack>
-              <Divider />
-              <HStack justify="space-between">
-                <VStack align="start" spacing={0}>
-                  <Text fontWeight="medium">Langue</Text>
-                  <Text fontSize="sm" color="gray.500">
-                    Sélectionnez votre langue préférée
-                  </Text>
-                </VStack>
-                <Select w="200px" defaultValue="fr">
-                  <option value="fr">Français</option>
-                  <option value="en">English</option>
-                  <option value="es">Español</option>
-                </Select>
-              </HStack>
-              <Divider />
-              <HStack justify="space-between">
-                <VStack align="start" spacing={0}>
-                  <Text fontWeight="medium">Notifications</Text>
-                  <Text fontSize="sm" color="gray.500">
-                    Gérer vos préférences de notifications
-                  </Text>
-                </VStack>
-                <Switch defaultChecked />
-              </HStack>
             </VStack>
-          </CardBody>
-        </Card>
+          </SettingsSection>
 
-        {/* Section Sécurité */}
-        <Card width={["100%", "70%"]} bg={sidebarBg}>
-          <CardHeader>
-            <HStack>
-              <Icon as={LockIcon} />
-              <Heading size="md">Sécurité</Heading>
-            </HStack>
-          </CardHeader>
-          <CardBody>
-            <VStack spacing={4} align="stretch">
-              <HStack justify="space-between">
-                <VStack align="start" spacing={0}>
-                  <Text fontWeight="medium">Changer le mot de passe</Text>
-                  <Text fontSize="sm" color="gray.500">
-                    Dernière modification il y a 3 mois
-                  </Text>
-                </VStack>
-                <Button variant="outline">Modifier</Button>
-              </HStack>
-              <Divider />
-              <HStack justify="space-between">
-                <VStack align="start" spacing={0}>
-                  <Text fontWeight="medium">Authentification à deux facteurs</Text>
-                  <Text fontSize="sm" color="gray.500">
-                    Ajouter une couche de sécurité supplémentaire
-                  </Text>
-                </VStack>
-                <Switch />
-              </HStack>
-              <Divider />
-              <HStack justify="space-between">
-                <VStack align="start" spacing={0}>
-                  <Text fontWeight="medium">Sessions actives</Text>
-                  <Text fontSize="sm" color="gray.500">
-                    Gérer vos appareils connectés
-                  </Text>
-                </VStack>
-                <Button variant="outline">Voir</Button>
-              </HStack>
+          {/* Section Préférences */}
+          <SettingsSection icon={<SunIcon />} title="Préférences du Site">
+            <VStack spacing={4} align="stretch" width="100%">
+              <SettingItem
+                label="Thème"
+                description="Choisissez entre le mode clair et sombre"
+                control={
+                  <Switch
+                    isChecked={colorMode === 'dark'}
+                    onChange={toggleColorMode}
+                    size={["md", "lg"]}
+                  />
+                }
+              />
+              
+              <SettingItem
+                label="Langue"
+                description="Sélectionnez votre langue préférée"
+                control={
+                  <Select 
+                    width="100%" 
+                    maxW={["100%", "200px"]} 
+                    defaultValue="fr"
+                    size={["md", "lg"]}
+                  >
+                    <option value="fr">Français</option>
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                  </Select>
+                }
+              />
+              
+              <SettingItem
+                label="Notifications"
+                description="Gérer vos préférences de notifications"
+                control={
+                  <Switch 
+                    defaultChecked 
+                    size={["md", "lg"]} 
+                  />
+                }
+              />
             </VStack>
-          </CardBody>
-        </Card>
-      </VStack>
-    </Container>
-  );
+          </SettingsSection>
+
+          {/* Section Sécurité */}
+          <SettingsSection icon={<LockIcon />} title="Sécurité">
+            <VStack spacing={4} align="stretch" width="100%">
+              <SettingItem
+                label="Changer le mot de passe"
+                description="Dernière modification il y a 3 mois"
+                control={
+                  <Button 
+                    variant="outline" 
+                    size={["sm", "md"]}
+                  >
+                    Modifier
+                  </Button>
+                }
+              />
+              
+              <SettingItem
+                label="Authentification à deux facteurs"
+                description="Ajouter une couche de sécurité supplémentaire"
+                control={
+                  <Switch size={["md", "lg"]} />
+                }
+              />
+              
+              <SettingItem
+                label="Sessions actives"
+                description="Gérer vos appareils connectés"
+                control={
+                  <Button 
+                    variant="outline" 
+                    size={["sm", "md"]}
+                  >
+                    Voir
+                  </Button>
+                }
+              />
+            </VStack>
+          </SettingsSection>
+        </VStack>
+      </Container>
+    );
 }
