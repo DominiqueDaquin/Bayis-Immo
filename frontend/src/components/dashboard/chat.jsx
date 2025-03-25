@@ -25,6 +25,7 @@ import {
   InputRightElement,
   useToast,
   Spinner,
+  useColorModeValue,
 } from "@chakra-ui/react";
 import {
   FiSearch,
@@ -44,6 +45,9 @@ import { useAuth } from "@/hooks/useAuth"; // Pour récupérer l'utilisateur con
 
 // Composant pour la date dans le chat
 const DateDivider = ({ date }) => {
+    const bgColor = useColorModeValue("neutral.50", "neutral.900")
+
+  
   return (
     <Flex align="center" my={6}>
       <Divider flex="1" />
@@ -52,7 +56,7 @@ const DateDivider = ({ date }) => {
         fontSize="xs"
         fontWeight="medium"
         color="gray.500"
-        bg="white"
+        bg={bgColor}
         px={3}
         py={1}
         borderRadius="full"
@@ -76,6 +80,12 @@ export default function Chat() {
   const messagesEndRef = useRef(null);
   const toast = useToast();
   const { user } = useAuth(); // Récupérer l'utilisateur connecté
+    // Couleurs du thème
+    const bgColor = useColorModeValue("neutral.50", "neutral.900")
+    const sidebarBg = useColorModeValue("white", "neutral.800")
+    const headerBg = useColorModeValue("white", "neutral.800")
+    const borderColor = useColorModeValue("neutral.200", "neutral.700")
+    const textColor = useColorModeValue("neutral.800", "neutral.100")
   
 
   // Scroll automatique vers le dernier message
@@ -152,7 +162,7 @@ export default function Chat() {
           w="350px"
           borderRight="1px"
           borderColor="gray.200"
-          bg="white"
+          bg={bgColor}
           display={{ base: "none", md: "block" }}
           h="80vh"
           overflowY="hidden"
@@ -161,9 +171,9 @@ export default function Chat() {
         </Box>
 
         {/* Zone principale du chat */}
-        <Flex flex="1" direction="column" bg="white" h="80vh" overflow="hidden">
+        <Flex flex="1" direction="column" bg={bgColor} h="80vh" overflow="hidden">
           {/* En-tête */}
-          <Flex p={4} align="center" borderBottom="1px" borderColor="gray.200" bg="white">
+          <Flex p={4} align="center" borderBottom="1px" borderColor="gray.200" bg={bgColor}>
             <IconButton
               icon={<FiMenu />}
               variant="ghost"
@@ -200,7 +210,7 @@ export default function Chat() {
             overflowY="auto"
             spacing={4}
             align="stretch"
-            bg="white"
+            bg={bgColor}
             css={{
               "&::-webkit-scrollbar": {
                 width: "4px",
@@ -244,7 +254,7 @@ export default function Chat() {
           </VStack>
 
           {/* Zone de saisie */}
-          <Flex p={4} borderTop="1px" borderColor="gray.200" bg="white">
+          <Flex p={4} borderTop="1px" borderColor="gray.200" bg={bgColor}>
             <HStack w="full" spacing={2}>
               {/* <IconButton icon={<FiPaperclip />} variant="ghost" colorScheme="blue" aria-label="Joindre un fichier" />
               <IconButton icon={<FiImage />} variant="ghost" colorScheme="blue" aria-label="Envoyer une image" /> */}
@@ -258,8 +268,8 @@ export default function Chat() {
                       handleSendMessage();
                     }
                   }}
-                  bg="gray.50"
-                  _focus={{ bg: "white" }}
+                  bg={bgColor}
+                  
                   borderRadius="full"
                   py={6}
                 />

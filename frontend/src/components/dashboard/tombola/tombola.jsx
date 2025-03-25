@@ -93,6 +93,12 @@ export default function Tombola({ isModerateur }) {
   const { user } = useAuth()
   const isMobile = useBreakpointValue({ base: true, md: false })
   const modalSize = useBreakpointValue({ base: "full", md: "xl" })
+  // Couleurs du thème
+  const bgColor = useColorModeValue("neutral.50", "neutral.900")
+  const sidebarBg = useColorModeValue("white", "neutral.800")
+  const headerBg = useColorModeValue("white", "neutral.800")
+  const borderColor = useColorModeValue("neutral.200", "neutral.700")
+  const textColor = useColorModeValue("neutral.800", "neutral.100")
 
   // Charger les tombolas depuis l'API
   useEffect(() => {
@@ -119,7 +125,11 @@ export default function Tombola({ isModerateur }) {
   // Créer une tombola
   const handleCreateSubmit = async (formData) => {
     try {
-      const response = await axiosInstance.post("/api/tombolas/", { ...formData, creer_par: user.id })
+      const response = await axiosInstance.post("/api/tombolas/", { ...formData, creer_par: user.id },{
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
       setTombolas([...tombolas, response.data])
       onCreateClose()
       toast({
@@ -143,7 +153,7 @@ export default function Tombola({ isModerateur }) {
   // Modifier une tombola
   const handleEditSubmit = async (formData) => {
     try {
-      const response = await axiosInstance.patch(`/api/tombolas/${selectedTombola.id}/`, formData)
+      const response = await axiosInstance.patch(`/api/tombolas/${selectedTombola.id}/`, {...formData,"statut":"p"})
       setTombolas(tombolas.map((t) => (t.id === response.data.id ? response.data : t)))
       onEditClose()
       toast({
@@ -217,9 +227,9 @@ export default function Tombola({ isModerateur }) {
     .filter((t) => t.titre.toLowerCase().includes(searchQuery.toLowerCase()))
 
   return (
-    <Box bg={useColorModeValue("gray.50", "gray.900")} minH="100vh" w="100%">
+    <Box bg={bgColor} minH="100vh" w="100%">
       <Container maxW="7xl" py={8} px={{ base: 4, md: 8 }}>
-        <Box bg={useColorModeValue("white", "gray.800")} p={6} borderRadius="md" boxShadow="md">
+        <Box bg={sidebarBg} p={6} borderRadius="md" boxShadow="md">
           <Flex justify="space-between" align="center" mb={8}>
             <Heading size="lg">{isModerateur ? "Tombolas à valider" : "Mes Tombolas"}</Heading>
             {!isModerateur && (

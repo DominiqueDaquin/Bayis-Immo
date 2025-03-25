@@ -37,11 +37,11 @@ export default function TombolaListing() {
   const isMobile = useBreakpointValue({ base: true, md: false })
   const [isLoading, setIsLoading] = useState(true)
 
-  // Couleurs pour le mode clair et sombre
-  const bg = useColorModeValue("white", "gray.800")
-  const cardBg = useColorModeValue("white", "gray.700")
-  const borderColor = useColorModeValue("gray.200", "gray.600")
-  const textColor = useColorModeValue("gray.800", "white")
+  const bgColor = useColorModeValue("neutral.50", "neutral.900")
+  const sidebarBg = useColorModeValue("white", "neutral.800")
+  const headerBg = useColorModeValue("white", "neutral.800")
+  const borderColor = useColorModeValue("neutral.200", "neutral.700")
+  const textColor = useColorModeValue("neutral.800", "neutral.100")
 
   // Récupérer les tombolas depuis l'API
   useEffect(() => {
@@ -160,7 +160,7 @@ export default function TombolaListing() {
     <div>
       <SimpleNavbar />
       <Container maxW="container.xl" py={8}>
-        <Box bg={bg} borderRadius="lg" borderWidth="1px" borderColor={borderColor} p={4}>
+        <Box bg={bgColor} borderRadius="lg" borderWidth="1px" borderColor={borderColor} p={4}>
           <Flex justify="space-between" align="center" mb={4}>
             <Heading size="lg" color={textColor}>
               Tombolas à découvrir
@@ -233,7 +233,7 @@ export default function TombolaListing() {
                 borderWidth="1px"
                 borderRadius="md"
                 borderColor={borderColor}
-                bg={cardBg}
+                bg={sidebarBg}
                 position="relative"
               >
                 <Flex justify="space-between" mb={2}>

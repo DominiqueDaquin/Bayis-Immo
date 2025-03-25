@@ -5,7 +5,7 @@ import {
   Avatar,
   Text,
   Tooltip,
-
+useColorModeValue
 } from "@chakra-ui/react"
 import {
   FiCheck,
@@ -16,6 +16,12 @@ const Message = ({ content, timestamp, isOwn, status, senderName,time }) => {
     const align = isOwn ? "flex-end" : "flex-start"
     const messageTime = new Date(timestamp)
     const now = new Date()
+  // Couleurs du thème
+  const bgColor = useColorModeValue("neutral.50", "neutral.900")
+  const sidebarBg = useColorModeValue("white", "neutral.800")
+  const headerBg = useColorModeValue("white", "neutral.800")
+  const borderColor = useColorModeValue("neutral.200", "neutral.700")
+  const textColor = useColorModeValue("neutral.800", "neutral.100")
 
   
     let timeAgo=time

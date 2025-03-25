@@ -51,9 +51,13 @@ export default function GestionnaireCampagnes({ isModerateur }) {
   const { isOpen, onOpen, onClose } = useDisclosure()
   const toast = useToast()
   const { user } = useAuth()
-  const bgColor = useColorModeValue("white", "gray.800")
-  const textColor = useColorModeValue("gray.800", "white")
-  const borderColor = useColorModeValue("gray.200", "gray.600")
+  // Couleurs du thème
+  const bgColor = useColorModeValue("neutral.50", "neutral.900")
+  const sidebarBg = useColorModeValue("white", "neutral.800")
+  const headerBg = useColorModeValue("white", "neutral.800")
+  const borderColor = useColorModeValue("neutral.200", "neutral.700")
+  const textColor = useColorModeValue("neutral.800", "neutral.100")
+
 
   // États pour la recherche et le filtrage
   const [searchQuery, setSearchQuery] = useState("")

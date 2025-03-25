@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { SignupForm } from './components/forms/signup-form';
 import { LoginForm } from './components/forms/login-form';
-import Home from './components/pages/home';
+import Home from './components/pages/annonce/home';
 import DetailAnnonce from './components/pages/detail-annoce';
 import Dashboard from './components/dashboard/dashboard';
 import { AuthProvider } from "@/context/AuthContext";

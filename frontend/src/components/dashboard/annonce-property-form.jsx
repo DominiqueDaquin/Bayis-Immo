@@ -30,67 +30,112 @@ const PropertyForm = ({ property, onSubmit, onCancel }) => {
       description: "",
       prix: "",
       localisation: "",
-      status: "p", // Par défaut, l'annonce est en attente
-    
-    },
+      status: "p", 
+      photos_upload: [] 
+    }
   )
-
-  const [uploadedImages, setUploadedImages] = useState([])
+  const [uploadedImages, setUploadedImages] = useState(property?.photos_upload || [])
   const toast = useToast()
-  console.log("modification",formData);
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
   const handleImageUpload = (e) => {
-    const files = e.target.files
+    const files = Array.from(e.target.files)
+    
     if (files.length > 0) {
-      const newImages = Array.from(files).map((file) => URL.createObjectURL(file))
-      setUploadedImages((prev) => [...prev, ...newImages])
-      setFormData((prev) => ({ ...prev, photos: [...prev.photos, ...files] }))
+      const validFiles = files.filter(file => {
+        if (!file.type.startsWith('image/')) {
+          toast({
+            title: "Fichier non valide",
+            description: `Le fichier ${file.name} n'est pas une image`,
+            status: "error",
+            duration: 5000,
+            isClosable: true,
+          })
+          return false
+        }
+        
+        if (file.size > 5 * 1024 * 1024) { // 5MB max
+          toast({
+            title: "Fichier trop volumineux",
+            description: `L'image ${file.name} dépasse la taille maximale de 5MB`,
+            status: "error",
+            duration: 5000,
+            isClosable: true,
+          })
+          return false
+        }
+        
+        return true
+      })
+
+      console.log("validfiles:",validFiles);
+      
+      // Création des URLs pour la prévisualisation
+      const newPreviews = validFiles.map(file => URL.createObjectURL(file))
+      
+      setUploadedImages(prev => [...prev, ...newPreviews])
+      console.log("image uploader",uploadedImages);
+      
+      setFormData(prev => ({
+        ...prev,
+        photos_upload: [...prev.photos_upload, ...validFiles]
+      }))
     }
   }
 
   const handleRemoveImage = (index) => {
-    const newImages = uploadedImages.filter((_, i) => i !== index)
-    const newPhotos = formData.photos.filter((_, i) => i !== index)
-    setUploadedImages(newImages)
-    setFormData((prev) => ({ ...prev, photos: newPhotos }))
+    // Supprime la prévisualisation
+    const newPreviews = [...uploadedImages]
+    URL.revokeObjectURL(newPreviews[index]) // Libère la mémoire
+    newPreviews.splice(index, 1)
+    
+    // Supprime le fichier correspondant
+    const newFiles = [...formData.photos_upload]
+    newFiles.splice(index, 1)
+    
+    setUploadedImages(newPreviews)
+    setFormData(prev => ({
+      ...prev,
+      photos_upload: newFiles
+    }))
   }
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    console.log(formData.photos,formData);  
-    // if (formData.photos.length === 0) {
-    //   toast({
-    //     title: "Erreur",
-    //     description: "Veuillez ajouter au moins une image.",
-    //     status: "error",
-    //     duration: 3000,
-    //     isClosable: true,
-    //   })
-    //   return
-    // }
+    
+    // Vérification des champs requis
+    if (!formData.titre || !formData.description || !formData.localisation) {
+      toast({
+        title: "Champs manquants",
+        description: "Veuillez remplir tous les champs obligatoires",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      })
+      return
+    }
 
-    // Créer un objet FormData pour envoyer les fichiers
+    // Création du FormData pour l'envoi
     const formDataToSend = new FormData()
     formDataToSend.append("titre", formData.titre)
     formDataToSend.append("description", formData.description)
     formDataToSend.append("prix", formData.prix)
     formDataToSend.append("localisation", formData.localisation)
     formDataToSend.append("status", formData.status)
+console.log(formDataToSend);
 
-    // Ajouter chaque fichier à FormData
-    // formData.photos.forEach((file, index) => {
-    //   formDataToSend.append(`photos`, file)
-    // })
-
-    setFormData(formDataToSend)
-
-   
+    // Ajout des images
+    formData.photos_upload.forEach((file, index) => {
+      formDataToSend.append(`images[${index}]`, file)
+    })
+    console.log("Données à envoyer:",formDataToSend);
+    console.log(formData);
     
-    onSubmit(formData)
+
+    onSubmit(formDataToSend)
   }
 
   return (
@@ -98,8 +143,15 @@ const PropertyForm = ({ property, onSubmit, onCancel }) => {
       <VStack spacing={6} align="stretch">
         {/* Section Upload d'images */}
         <FormControl>
-          <FormLabel>Images de l'annonce</FormLabel>
-          <Box border="2px dashed" borderColor="gray.200" borderRadius="md" p={4} textAlign="center">
+          <FormLabel>Images de l'annonce (max 10)</FormLabel>
+          <Box 
+            border="2px dashed" 
+            borderColor="gray.200" 
+            borderRadius="md" 
+            p={4} 
+            textAlign="center"
+            _hover={{ borderColor: "blue.300" }}
+          >
             <Flex direction="column" align="center" justify="center">
               <IconButton
                 as="label"
@@ -110,38 +162,52 @@ const PropertyForm = ({ property, onSubmit, onCancel }) => {
                 variant="ghost"
                 colorScheme="blue"
                 cursor="pointer"
+                isDisabled={uploadedImages.length >= 10}
               />
               <Text mt={2} fontSize="sm" color="gray.500">
-                Glissez-déposez ou cliquez pour télécharger des images
+                {uploadedImages.length >= 10 
+                  ? "Nombre maximum d'images atteint" 
+                  : "Glissez-déposez ou cliquez pour télécharger des images (JPEG, PNG, max 5MB)"}
               </Text>
               <Input
                 type="file"
                 id="image-upload"
                 multiple
-                accept="image/*"
+                accept="image/jpeg,image/png"
                 onChange={handleImageUpload}
                 display="none"
+                disabled={uploadedImages.length >= 10}
               />
             </Flex>
           </Box>
-          <Flex wrap="wrap" mt={4} gap={2}>
-            {uploadedImages.map((image, index) => (
-              <Box key={index} position="relative">
-                <Image src={image} alt={`Uploaded ${index}`} boxSize="100px" objectFit="cover" borderRadius="md" />
-                <IconButton
-                  icon={<FiX />}
-                  aria-label="Supprimer l'image"
-                  size="xs"
-                  position="absolute"
-                  top={1}
-                  right={1}
-                  onClick={() => handleRemoveImage(index)}
-                  colorScheme="red"
-                  variant="ghost"
-                />
-              </Box>
-            ))}
-          </Flex>
+          
+          {/* Prévisualisation des images */}
+          {uploadedImages.length > 0 && (
+            <Flex wrap="wrap" mt={4} gap={2}>
+              {uploadedImages.map((image, index) => (
+                <Box key={index} position="relative">
+                  <Image 
+                    src={typeof image === 'string' ? image : URL.createObjectURL(image)} 
+                    alt={`Preview ${index}`} 
+                    boxSize="100px" 
+                    objectFit="cover" 
+                    borderRadius="md"
+                  />
+                  <IconButton
+                    icon={<FiX />}
+                    aria-label="Supprimer l'image"
+                    size="xs"
+                    position="absolute"
+                    top={1}
+                    right={1}
+                    onClick={() => handleRemoveImage(index)}
+                    colorScheme="red"
+                    variant="ghost"
+                  />
+                </Box>
+              ))}
+            </Flex>
+          )}
         </FormControl>
 
         {/* Titre */}
@@ -152,6 +218,7 @@ const PropertyForm = ({ property, onSubmit, onCancel }) => {
             value={formData.titre}
             onChange={handleChange}
             placeholder="Ex: Villa moderne avec piscine"
+            maxLength={100}
           />
         </FormControl>
 
@@ -164,23 +231,24 @@ const PropertyForm = ({ property, onSubmit, onCancel }) => {
             onChange={handleChange}
             placeholder="Décrivez votre bien en détail..."
             rows={4}
+            maxLength={2000}
           />
         </FormControl>
 
         {/* Prix et Localisation */}
         <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-          <FormControl >
-            <FormLabel>Prix</FormLabel>
+          <FormControl isRequired>
+            <FormLabel>Prix (FCFA)</FormLabel>
             <InputGroup>
-              <NumberInput w="full">
+              <NumberInput w="full" min={0}>
                 <NumberInputField
                   name="prix"
                   value={formData.prix}
                   onChange={handleChange}
-                  placeholder={formData.prix===""?"Ex: 250000":formData.prix}
+                  placeholder="Ex: 250000"
                 />
               </NumberInput>
-              <InputRightAddon children="Fcfa" />
+              <InputRightAddon children="FCFA" />
             </InputGroup>
           </FormControl>
 
@@ -191,6 +259,7 @@ const PropertyForm = ({ property, onSubmit, onCancel }) => {
               value={formData.localisation}
               onChange={handleChange}
               placeholder="Ex: Ange Raphaël"
+              maxLength={100}
             />
           </FormControl>
         </SimpleGrid>
@@ -200,7 +269,11 @@ const PropertyForm = ({ property, onSubmit, onCancel }) => {
           <Button onClick={onCancel} variant="outline">
             Annuler
           </Button>
-          <Button colorScheme="blue" type="submit">
+          <Button 
+            colorScheme="blue" 
+            type="submit"
+            isLoading={false} // Vous pouvez ajouter un état de chargement ici
+          >
             {property ? "Mettre à jour" : "Créer l'annonce"}
           </Button>
         </HStack>

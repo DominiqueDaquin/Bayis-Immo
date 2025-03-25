@@ -76,13 +76,17 @@ const NotificationCard = ({ notification, onMarkAsRead, onDelete, onArchive }) =
     }
   }
 
-  const bgColor = useColorModeValue("white", "gray.800")
-  const borderColor = useColorModeValue("gray.200", "gray.700")
+  const bgColor = useColorModeValue("neutral.50", "neutral.900")
+  const sidebarBg = useColorModeValue("white", "neutral.800")
+  const headerBg = useColorModeValue("white", "neutral.800")
+  const borderColor = useColorModeValue("neutral.200", "neutral.700")
+  const textColor = useColorModeValue("neutral.800", "neutral.100")
+
   const iconColor = getTypeColor(type)
 
   return (
     <Card
-      bg={is_read ? bgColor : "blue.50"}
+      bg={is_read ? bgColor : borderColor}
       borderWidth="1px"
       borderColor={borderColor}
       transition="all 0.2s"
@@ -122,7 +126,7 @@ const NotificationCard = ({ notification, onMarkAsRead, onDelete, onArchive }) =
                 </MenuList>
               </Menu>
             </Flex>
-            <Text color="gray.500" fontSize="xs">
+            <Text color={textColor} fontSize="xs">
               {new Date(created_at).toLocaleDateString("fr-FR", {
                 day: "numeric",
                 month: "long",
@@ -147,9 +151,12 @@ export default function Notifications() {
 
   // Définir le nombre de colonnes en fonction de la taille de l'écran
   const columns = useBreakpointValue({ base: 1, md: 2, lg: 3 })
-  const bgColor=useColorModeValue("white", "gray.800")
+  const bgColor = useColorModeValue("neutral.50", "neutral.900")
+  const sidebarBg = useColorModeValue("white", "neutral.800")
+  const headerBg = useColorModeValue("white", "neutral.800")
+  const borderColor = useColorModeValue("neutral.200", "neutral.700")
+  const textColor = useColorModeValue("neutral.800", "neutral.100")
 
-  // Récupérer les notifications
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
@@ -302,22 +309,15 @@ export default function Notifications() {
         <VStack spacing={6} align="stretch" mb={8}>
           <Flex justify="space-between" align="center" direction={{ base: "column", sm: "row" }} gap={{ base: 4, sm: 0 }}>
             <Heading size="lg">Notifications</Heading>
-            <HStack spacing={4}>
-              <Button leftIcon={<FiRefreshCw />} variant="ghost" onClick={() => window.location.reload()}>
-                Actualiser
-              </Button>
-              <Button leftIcon={<FiSettings />} variant="ghost">
-                Paramètres
-              </Button>
-            </HStack>
+
           </Flex>
 
           {/* Statistiques */}
           <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
-            <Card>
+            <Card bg={borderColor}>
               <CardBody>
                 <VStack>
-                  <Text fontSize="sm" color="gray.500">
+                  <Text fontSize="sm" color={textColor}>
                     Total
                   </Text>
                   <Heading size="md">{stats.total}</Heading>
@@ -325,9 +325,9 @@ export default function Notifications() {
               </CardBody>
             </Card>
             <Card>
-              <CardBody>
+              <CardBody bg={borderColor}>
                 <VStack>
-                  <Text fontSize="sm" color="gray.500">
+                  <Text fontSize="sm" color={textColor}>
                     Non lues
                   </Text>
                   <Heading size="md" color="blue.500">
@@ -337,9 +337,9 @@ export default function Notifications() {
               </CardBody>
             </Card>
             <Card>
-              <CardBody>
+              <CardBody bg={borderColor}>
                 <VStack>
-                  <Text fontSize="sm" color="gray.500">
+                  <Text fontSize="sm" color={textColor}>
                     Importantes
                   </Text>
                   <Heading size="md" color="yellow.500">
@@ -349,12 +349,12 @@ export default function Notifications() {
               </CardBody>
             </Card>
             <Card>
-              <CardBody>
+              <CardBody bg={borderColor}>
                 <VStack>
-                  <Text fontSize="sm" color="gray.500">
+                  <Text fontSize="sm" color={textColor}>
                     Archivées
                   </Text>
-                  <Heading size="md" color="gray.500">
+                  <Heading size="md" color={textColor}>
                     {stats.archived}
                   </Heading>
                 </VStack>
@@ -407,7 +407,7 @@ export default function Notifications() {
         ) : (
           <Box textAlign="center" py={10}>
             <Icon as={FiBell} boxSize={10} color="gray.400" mb={4} />
-            <Text color="gray.500">Aucune notification trouvée</Text>
+            <Text color={textColor}>Aucune notification trouvée</Text>
           </Box>
         )}
       </Container>

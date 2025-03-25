@@ -22,6 +22,7 @@ import {
   Button,
   Divider,
   useColorMode,
+  useColorModeValue,
   Stack,
   Icon,
 } from '@chakra-ui/react';
@@ -34,18 +35,25 @@ import {
   LockIcon,
   SettingsIcon,
 } from '@chakra-ui/icons';
-import axiosInstance from '@/api/axios'; // Assurez-vous d'importer votre instance axios
-import { useAuth } from '@/hooks/useAuth'; // Assurez-vous d'importer useAuth
+import axiosInstance from '@/api/axios'; 
+import { useAuth } from '@/hooks/useAuth'; 
 
 export default function Settings() {
-  const { userDetail, isAuthenticated } = useAuth(); // Récupérer les détails de l'utilisateur
-  const [imageUrl, setImageUrl] = useState(userDetail?.photo || ''); // Photo de profil
-  const [name, setName] = useState(userDetail?.name || ''); // Nom complet
-  const [email, setEmail] = useState(userDetail?.email || ''); // Email
-  const [phone, setPhone] = useState(userDetail?.phone || ''); // Téléphone
+  const { userDetail, isAuthenticated } = useAuth(); 
+  const [imageUrl, setImageUrl] = useState(userDetail?.photo || ''); 
+  const [name, setName] = useState(userDetail?.name || ''); 
+  const [email, setEmail] = useState(userDetail?.email || ''); 
+  const [phone, setPhone] = useState(userDetail?.phone || ''); 
   const fileInputRef = useRef(null);
   const toast = useToast();
   const { colorMode, toggleColorMode } = useColorMode();
+    // Couleurs du thème
+    const bgColor = useColorModeValue("neutral.50", "neutral.900")
+    const sidebarBg = useColorModeValue("white", "neutral.800")
+    const headerBg = useColorModeValue("white", "neutral.800")
+    const borderColor = useColorModeValue("neutral.200", "neutral.700")
+    const textColor = useColorModeValue("neutral.800", "neutral.100")
+  
 
   // Mettre à jour les champs lorsque userDetail change
   useEffect(() => {
@@ -122,7 +130,7 @@ export default function Settings() {
         <Heading size="lg">Paramètres</Heading>
 
         {/* Section Profil Personnel */}
-        <Card width={["100%", "70%"]}>
+        <Card width={["100%", "70%"]} bg={sidebarBg}>
           <CardHeader>
             <HStack>
               <Icon as={SettingsIcon} />
@@ -195,7 +203,7 @@ export default function Settings() {
         </Card>
 
         {/* Section Préférences */}
-        <Card width={["100%", "70%"]}>
+        <Card width={["100%", "70%"]} bg={sidebarBg}>
           <CardHeader>
             <HStack>
               <Icon as={SunIcon} />
@@ -245,7 +253,7 @@ export default function Settings() {
         </Card>
 
         {/* Section Sécurité */}
-        <Card width={["100%", "70%"]}>
+        <Card width={["100%", "70%"]} bg={sidebarBg}>
           <CardHeader>
             <HStack>
               <Icon as={LockIcon} />

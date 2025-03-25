@@ -10,18 +10,28 @@ import {
   AvatarBadge,
   Spinner,
   VStack,
+  useColorModeValue
 } from "@chakra-ui/react";
 import axiosInstance from "@/api/axios"; // Assurez-vous que le chemin est correct
 import { useAuth } from "@/hooks/useAuth";
 
 const ContactItem = ({ name, lastMessage, time, unread, isActive, isOnline, onClick }) => {
+    // Couleurs du thème
+  // Couleurs du thème
+  const bgColor = useColorModeValue("neutral.50", "neutral.900")
+  const sidebarBg = useColorModeValue("white", "neutral.800")
+  const headerBg = useColorModeValue("white", "neutral.800")
+  const borderColor = useColorModeValue("neutral.200", "neutral.700")
+  const textColor = useColorModeValue("neutral.800", "neutral.100")
+
+  
   return (
     <Flex
       p={3}
       cursor="pointer"
       alignItems="center"
-      _hover={{ bg: "gray.50" }}
-      bg={isActive ? "blue.50" : "white"}
+      _hover={{ bg: borderColor }}
+      bg={isActive ? "blue.50" : bgColor}
       borderLeft={isActive ? "4px solid" : "4px solid transparent"}
       borderLeftColor={isActive ? "blue.500" : "transparent"}
       onClick={onClick}
@@ -31,7 +41,7 @@ const ContactItem = ({ name, lastMessage, time, unread, isActive, isOnline, onCl
       </Avatar>
       <Box flex="1">
         <Flex justify="space-between" align="center">
-          <Text fontWeight={isActive || unread ? "bold" : "medium"} color={isActive ? "blue.600" : "gray.800"}>
+          <Text fontWeight={isActive || unread ? "bold" : "medium"} color={isActive ? "blue.600" : textColor}>
             {name}
           </Text>
           <Text fontSize="xs" color={unread ? "blue.500" : "gray.500"} fontWeight={unread ? "bold" : "normal"}>
@@ -64,6 +74,12 @@ const ContactList = ({ setContact }) => {
   const [loading, setLoading] = useState(true); // État de chargement
   const [error, setError] = useState(null); // Gestion des erreurs
   const { user, isAuthenticated } = useAuth();
+  // Couleurs du thème
+  const bgColor = useColorModeValue("neutral.50", "neutral.900")
+  const sidebarBg = useColorModeValue("white", "neutral.800")
+  const headerBg = useColorModeValue("white", "neutral.800")
+  const borderColor = useColorModeValue("neutral.200", "neutral.700")
+  const textColor = useColorModeValue("neutral.800", "neutral.100")
 
   // Charger les discussions depuis l'API
   useEffect(() => {

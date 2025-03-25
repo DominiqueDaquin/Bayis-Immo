@@ -28,16 +28,8 @@ import {
   InputLeftElement,
   HStack,
   VStack,
-  Tag,
   Heading,
   SimpleGrid,
-  FormControl,
-  FormLabel,
-  Textarea,
-  Select,
-  NumberInput,
-  NumberInputField,
-  InputRightAddon,
   AlertDialog,
   AlertDialogBody,
   AlertDialogFooter,
@@ -51,23 +43,18 @@ import {
   DrawerOverlay,
   DrawerContent,
   DrawerCloseButton,
-  Card,
-  CardBody,
-  Icon,
+  useColorModeValue
+
 } from "@chakra-ui/react"
 import {
   FiSearch,
   FiFilter,
   FiDownload,
   FiPlus,
-  FiChevronLeft,
-  FiChevronRight,
   FiEdit2,
   FiTrash2,
-  FiEye,
-  FiImage,
-  FiMapPin,
-  FiHome,
+  FiEye
+
 } from "react-icons/fi"
 import ImageCarousel from "./annonce-image-carrousel"
 import Filters from "./annonce-filters"
@@ -91,8 +78,14 @@ export default function Annonce() {
   const {user}=useAuth();
   const isMobile = useBreakpointValue({ base: true, md: false })
   const modalSize = useBreakpointValue({ base: "full", md: "xl" })
+  // Couleurs du thème
+  const bgColor = useColorModeValue("neutral.50", "neutral.900")
+  const sidebarBg = useColorModeValue("white", "neutral.800")
+  const headerBg = useColorModeValue("white", "neutral.800")
+  const borderColor = useColorModeValue("neutral.200", "neutral.700")
+  const textColor = useColorModeValue("neutral.800", "neutral.100")
 
-  // Fetch annonces from API
+
   useEffect(() => {
     const fetchAnnonces = async () => {
       try {
@@ -154,7 +147,13 @@ export default function Annonce() {
 
   const handleCreateSubmit = async (formData) => {
     try {
-      const response = await axiosInstance.post("/api/annonces/",{...formData,creer_par:user.id})
+      const response = await axiosInstance.post("/api/annonces/",{...formData,creer_par:user.id},
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      )
       
       const newProperty = response.data
       setProperties([...properties, newProperty])
@@ -229,9 +228,9 @@ export default function Annonce() {
     }
 
     return (
-      <Box overflowX="auto" bg="white" borderRadius="md" boxShadow="sm">
+      <Box overflowX="auto" bg={bgColor} borderRadius="md" boxShadow="sm">
         <Table variant="simple">
-          <Thead bg="white">
+          <Thead bg={bgColor}>
             <Tr>
               <Th>Photo</Th>
               <Th>Titre</Th>
@@ -247,9 +246,9 @@ export default function Annonce() {
               <Tr
                 key={property.id}
                 cursor="pointer"
-                _hover={{ bg: "gray.50" }}
+                _hover={{ bg: bgColor }}
                 onClick={() => handleViewProperty(property)}
-                bg="white"
+                bg={bgColor}
               >
                 <Td>
                   {property.photos.length > 0 ? (
@@ -300,14 +299,14 @@ export default function Annonce() {
                         e.stopPropagation()
                         handleViewProperty(property)
                       }}
-                      bg="white"
+                      bg={bgColor}
                     />
                     <IconButton
                       icon={<FiEdit2 />}
                       aria-label="Modifier"
                       size="sm"
                       onClick={(e) => handleEditProperty(property, e)}
-                      bg="white"
+                      bg={bgColor}
                     />
                     <IconButton
                       icon={<FiTrash2 />}
@@ -327,13 +326,13 @@ export default function Annonce() {
   }
 
   return (
-    <Box bg="white" minH="100vh" w="100%">
+    <Box bg={bgColor} minH="100vh" w="100%">
       <Container maxW="7xl" py={8} px={{ base: 4, md: 8 }}>
         <Flex
           justify="space-between"
           align="center"
           mb={8}
-          bg="white"
+          bg={bgColor}
           direction={{ base: "column", sm: "row" }}
           gap={{ base: 4, sm: 0 }}
         >
@@ -343,17 +342,14 @@ export default function Annonce() {
           </Button>
         </Flex>
 
-        <Flex mb={6} gap={4} wrap={{ base: "wrap", md: "nowrap" }} bg="white" direction={{ base: "column", sm: "row" }}>
+        <Flex mb={6} gap={4} wrap={{ base: "wrap", md: "nowrap" }} bg={bgColor} direction={{ base: "column", sm: "row" }}>
           <InputGroup maxW={{ base: "100%", md: "400px" }}>
             <InputLeftElement pointerEvents="none">
               <FiSearch color="gray.300" />
             </InputLeftElement>
-            <Input placeholder="Rechercher une annonce..." bg="white" />
+            <Input placeholder="Rechercher une annonce..." bg={bgColor} />
           </InputGroup>
-          <HStack spacing={2} justifyContent={{ base: "flex-end", sm: "flex-start" }}>
-            <IconButton icon={<FiFilter />} aria-label="Filtrer" bg="white" />
-            <IconButton icon={<FiDownload />} aria-label="Exporter" bg="white" />
-          </HStack>
+          
         </Flex>
 
         <Box overflowX="auto">
@@ -372,7 +368,7 @@ export default function Annonce() {
                 {selectedProperty && (
                   <VStack spacing={6} align="stretch">
                     <ImageCarousel images={selectedProperty.photos.map((photo) => photo.photo)} />
-                    <VStack align="start" spacing={4} bg="white" p={4}>
+                    <VStack align="start" spacing={4} bg={bgColor} p={4}>
                       <Heading size="lg">{selectedProperty.titre}</Heading>
                       <HStack>
                         <Badge colorScheme={getStatusColor(selectedProperty.status)}>
@@ -418,13 +414,13 @@ export default function Annonce() {
         ) : (
           <Modal isOpen={isViewOpen} onClose={onViewClose} size={modalSize}>
             <ModalOverlay />
-            <ModalContent maxW={{ base: "100%", md: "900px" }} bg="white">
+            <ModalContent maxW={{ base: "100%", md: "900px" }} bg={bgColor}>
               <ModalCloseButton zIndex="modal" />
-              <ModalBody p={6} bg="white">
+              <ModalBody p={6} bg={bgColor}>
                 {selectedProperty && (
                   <VStack spacing={6} align="stretch">
                     <ImageCarousel images={selectedProperty.photos.map((photo) => photo.photo)} />
-                    <VStack align="start" spacing={4} bg="white">
+                    <VStack align="start" spacing={4} bg={bgColor}>
                       <Heading size="lg">{selectedProperty.titre}</Heading>
                       <HStack>
                         <Badge colorScheme={getStatusColor(selectedProperty.status)}>
@@ -469,7 +465,7 @@ export default function Annonce() {
 
         <Modal isOpen={isCreateOpen} onClose={onCreateClose} size={modalSize}>
           <ModalOverlay />
-          <ModalContent bg="white">
+          <ModalContent bg={bgColor}>
             <ModalHeader>Créer une nouvelle annonce</ModalHeader>
             <ModalCloseButton />
             <ModalBody>
@@ -480,7 +476,7 @@ export default function Annonce() {
 
         <Modal isOpen={isEditOpen} onClose={onEditClose} size={modalSize}>
           <ModalOverlay />
-          <ModalContent bg="white">
+          <ModalContent bg={bgColor}>
             <ModalHeader>Modifier l'annonce</ModalHeader>
             <ModalCloseButton />
             <ModalBody>
