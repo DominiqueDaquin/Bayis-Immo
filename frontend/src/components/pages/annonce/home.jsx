@@ -41,6 +41,7 @@ import {
   Show,
   Hide
 } from "@chakra-ui/react";
+import Footer from "@/components/partials/footer";
 import { FaHeart, FaRegHeart, FaThLarge, FaCommentAlt, FaFilter, FaSearch } from "react-icons/fa";
 import { StarIcon } from "@chakra-ui/icons";
 import { gsap } from "gsap";
@@ -407,6 +408,7 @@ export default function Home() {
           />
         </Tooltip>
       </Container>
+<Footer />
     </Box>
   );
 }

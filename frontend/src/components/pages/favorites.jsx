@@ -78,7 +78,7 @@ export default function FavoritesPage() {
 
   const removeFavorite = async (id) => {
     try {
-      await axiosInstance.delete(`/api/favoris/supprimer/${id}/`);
+      await axiosInstance.delete(`/api/favoris/${id}/`);
       setFavoris(favoris.filter((fav) => fav.id !== id));
       toast({
         title: "Supprimé des favoris",

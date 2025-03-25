@@ -65,8 +65,8 @@ export default function SimpleNavbar() {
   // Animation GSAP au chargement
   useEffect(() => {
     gsap.from(navRef.current, {
-      y: -20,
-      opacity: 0,
+      y: 0,
+      opacity: 1,
       duration: 0.6,
       ease: "power2.out"
     });

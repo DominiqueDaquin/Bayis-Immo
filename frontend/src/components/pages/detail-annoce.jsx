@@ -42,7 +42,7 @@ import SimpleNavbar from "../partials/navbar";
 import { useAuth } from "@/hooks/useAuth";
 import { baseUrl } from "@/config";
 import { gsap } from "gsap";
-
+import Footer from "../partials/footer";
 export default function DetailAnnonce() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -587,6 +587,8 @@ export default function DetailAnnonce() {
           </ModalBody>
         </ModalContent>
       </Modal>
+
+      <Footer />
     </Box>
   );
 }
