@@ -1,3 +1,3 @@
-export const baseUrl="http://127.0.0.1:8000"   //"https://dakicodeur.pythonanywhere.com"
+export const baseUrl="https://dakicodeur.pythonanywhere.com"
 
-export const baseUrlFrontend= "https://bayisimmob.onrender.com" //"http://localhost:5173"
+export const baseUrlFrontend= "http://https://bayisimmob.onrender.com"
