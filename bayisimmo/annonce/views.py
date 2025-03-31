@@ -544,44 +544,85 @@ class PubliciteView(viewsets.ModelViewSet):
         """Assigner automatiquement l'utilisateur connecté lors de la création."""
         serializer.save(user=self.request.user)
 
+# class LygosPaymentView(APIView):
+#     def post(self, request):
+#         url = "https://api.lygosapp.com/v1/gateway"
+#         headers = {
+#             "api-key": settings.LYGOS_API_KEY,  
+#             "Content-Type": "application/json",
+#         }
+
+#         try:
+#             response = requests.post(url, json=request.data, headers=headers)
+#             return Response(response.json(), status=response.status_code)
+
+#         except Exception as e:
+#             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
 class LygosPaymentView(APIView):
     def post(self, request):
         url = "https://api.lygosapp.com/v1/gateway"
         headers = {
             "api-key": settings.LYGOS_API_KEY,
             "Content-Type": "application/json",
+            "User-Agent": "YourApp/1.0"
         }
 
-        # Configuration spécifique pour PythonAnywhere
+        # Configuration spéciale pour contourner le proxy
         session = requests.Session()
         
-        # Solution 1: Désactivation complète du proxy
-        session.trust_env = False
+        # 1. D'abord essayer sans proxy
+        session.trust_env = False  # Ignore les variables proxy système
         
-        # Solution alternative 2: Utilisation du proxy de PythonAnywhere si nécessaire
-        # proxies = {
-        #     'http': 'http://proxy.server:3128',
-        #     'https': 'http://proxy.server:3128'
-        # }
-
         try:
+            # Premier essai sans proxy
             response = session.post(
                 url,
                 json=request.data,
                 headers=headers,
-                timeout=30,  # Timeout augmenté pour PythonAnywhere
-                # proxies=proxies  # À décommenter si vous utilisez la solution alternative
+                timeout=15,
+                verify=True
             )
+            
+            # 2. Si échec, essayer avec le proxy officiel de PythonAnywhere
+            if response.status_code in [403, 502, 503]:
+                proxies = {
+                    'https': 'http://proxy.server:3128',
+                    'http': 'http://proxy.server:3128'
+                }
+                response = session.post(
+                    url,
+                    json=request.data,
+                    headers=headers,
+                    timeout=15,
+                    proxies=proxies,
+                    verify=True
+                )
+
             response.raise_for_status()
             return Response(response.json(), status=response.status_code)
 
-        except requests.exceptions.RequestException as e:
-            error_message = f"Erreur de connexion avec l'API Lygos: {str(e)}"
+        except requests.exceptions.SSLError as e:
             return Response(
-                {"error": error_message},
+                {"error": "Erreur SSL", "details": str(e)},
+                status=status.HTTP_502_BAD_GATEWAY
+            )
+        except requests.exceptions.ConnectionError as e:
+            return Response(
+                {
+                    "error": "Connexion refusée par le proxy",
+                    "solution": "Contactez le support PythonAnywhere pour autoriser api.lygosapp.com",
+                    "details": str(e)
+                },
                 status=status.HTTP_503_SERVICE_UNAVAILABLE
             )
-        
+        except Exception as e:
+            return Response(
+                {"error": "Erreur inattendue", "details": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )     
 
 class LygosPaymentStatusView(APIView):
     def post(self, request):
