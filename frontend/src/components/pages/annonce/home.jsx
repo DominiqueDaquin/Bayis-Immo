@@ -57,7 +57,6 @@ import HeroBanner from "./hero";
 import Rating from "./rating";
 import PropertyCard from "./property-card";
 import FiltersDrawer from "./filters-drawer";
-
 export default function Home() {
   const theme = useTheme();
   const { colorMode } = useColorMode();
@@ -72,20 +71,42 @@ export default function Home() {
   const [annonces, setAnnonces] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [prixMin, setPrixMin] = useState(null)
+  const [prixMax, setPrixMax] = useState(null)
+  const [locationFiltre,setLocationFiltre]=useState("")
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+  const [tri,setTri]=useState("")
   const toast = useToast();
   const { user, isAuthenticated } = useAuth();
   const containerRef = useRef();
   const isMobile = useBreakpointValue({ base: true, md: false });
-
+  const navigate = useNavigate();
   // Couleurs adaptatives
   const bgColor = useColorModeValue("neutral.50", "neutral.900");
   const cardBg = useColorModeValue("white", "neutral.800");
   const textColor = useColorModeValue("neutral.800", "whiteAlpha.900");
 
-  const itemsPerPage = isMobile ? 4 : 6;
+  const itemsPerPage = isMobile ? 8 : 12;
   const totalPages = Math.ceil(annonces.length / itemsPerPage) || 1;
-  const paginatedProperties = annonces.slice(
+  const filteredAnnonce = annonces
+    .filter((t) => prixMin==null? true:t.prix >= prixMin)
+    .filter((t) => prixMax==null ? true:t.prix <= prixMax)
+    .filter((t) => t.titre.toLowerCase().includes(searchQuery.toLowerCase()))
+    .filter((t) => t.localisation.toLowerCase().includes(locationFiltre.toLowerCase()))
+    .sort((a, b) => {
+      switch (tri) {
+        case "featured":
+          return b.vues.length -a. vues.length
+        case "price-asc":
+          return a.prix - b.prix; 
+        case "price-desc":
+          return b.prix - a.prix; 
+        case "rating":
+          return b.moyenne - a.moyenne; 
+        default:
+          return 0; // Pas de tri spécifique
+      }})
+  const paginatedProperties = filteredAnnonce.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
@@ -108,7 +129,7 @@ export default function Home() {
       const response = await axiosInstance.get("/api/annonces");
       setAnnonces(response.data);
       console.log(response.data);
-      
+
     } catch (error) {
       toast({
         title: "Erreur",
@@ -127,8 +148,8 @@ export default function Home() {
     if (!user) return;
     try {
       const response = await axiosInstance.get('/api/favoris/mes-favoris/');
-      console.log("Mes favoris",response.data);
-      
+      console.log("Mes favoris", response.data);
+
       setFavorites(response.data.map(fav => fav.id));
     } catch (error) {
       console.error("Erreur lors de la récupération des favoris:", error);
@@ -160,7 +181,7 @@ export default function Home() {
           position: "top"
         });
       } else {
-        await axiosInstance.post("/api/favoris/", { annonce_id: annonceId,user:user.id });
+        await axiosInstance.post("/api/favoris/", { annonce_id: annonceId, user: user.id });
         setFavorites(prev => [...prev, annonceId]);
         toast({
           title: "Ajouté aux favoris !",
@@ -171,8 +192,8 @@ export default function Home() {
         });
       }
     } catch (error) {
-      console.log("erreur favoris",error);
-      
+      console.log("erreur favoris", error);
+
       toast({
         title: "Erreur",
         description: error.response?.data?.detail || "Une erreur s'est produite",
@@ -195,7 +216,7 @@ export default function Home() {
   // useEffect(() => {
   //   if (annonces.length > 0 && containerRef.current) {
   //     const cards = gsap.utils.toArray(".property-card");
-      
+
   //     cards.forEach((card, i) => {
   //       gsap.fromTo(card, {
   //         opacity: 0,
@@ -234,17 +255,17 @@ export default function Home() {
 
       <HeroBanner />
 
-      <Container 
-        maxW="container.xl" 
-        py={8} 
+      <Container
+        maxW="container.xl"
+        py={8}
         px={{ base: 4, md: 6 }}
         ref={containerRef}
       >
         {/* Barre de recherche et filtres */}
-        <Flex 
-          justify="space-between" 
-          mb={8} 
-          direction={{ base: "column", md: "row" }} 
+        <Flex
+          justify="space-between"
+          mb={8}
+          direction={{ base: "column", md: "row" }}
           gap={6}
         >
           <Box flex={1} maxW={{ base: "full", md: "md" }}>
@@ -263,33 +284,34 @@ export default function Home() {
           </Box>
 
           <HStack spacing={3}>
-            <Select 
-              placeholder="Trier par" 
+            <Select
+              placeholder="Trier par"
               width={{ base: "full", md: "200px" }}
               variant="outline"
               icon={<FaFilter size="14px" />}
               colorScheme="primary"
               bg={cardBg}
+              onChange={(e)=>setTri(e.target.value)}
             >
               <option value="featured">En vedette</option>
               <option value="price-asc">Prix croissant</option>
               <option value="price-desc">Prix décroissant</option>
               <option value="rating">Meilleures notes</option>
             </Select>
-            
-            <Show above="sm">
-              <Button 
-                leftIcon={<FaThLarge />} 
+
+            {/* <Show above="sm">
+              <Button
+                leftIcon={<FaThLarge />}
                 variant="outline"
                 colorScheme="primary"
                 bg={cardBg}
               >
                 Vue grille
               </Button>
-            </Show>
-            
+            </Show> */}
+
             <Hide above="md">
-              <Button 
+              <Button
                 leftIcon={<FaFilter />}
                 onClick={() => setIsFiltersOpen(true)}
                 colorScheme="primary"
@@ -310,16 +332,27 @@ export default function Home() {
                   <FormControl>
                     <FormLabel fontWeight="semibold" color={textColor}>Prix (XAF)</FormLabel>
                     <Grid templateColumns="repeat(2, 1fr)" gap={3}>
-                      <Input placeholder="Minimum" focusBorderColor="primary.500" />
-                      <Input placeholder="Maximum" focusBorderColor="primary.500" />
+                      <Input
+                        type="number"
+                        placeholder="Minimum"
+                        focusBorderColor="primary.500"
+                        onChange={(e) => setPrixMin(parseFloat(e.target.value) || 0)}
+                      />
+                      <Input
+                        type="number"
+                        placeholder="Maximum"
+                        focusBorderColor="primary.500"
+                        onChange={(e) => setPrixMax(parseFloat(e.target.value) || 0)}
+                      />
                     </Grid>
                   </FormControl>
 
                   <FormControl>
                     <FormLabel fontWeight="semibold" color={textColor}>Localisation</FormLabel>
-                    <Select 
-                      placeholder="Choisir une ville" 
+                    <Select
+                      placeholder="Choisir une ville"
                       focusBorderColor="primary.500"
+                      onChange={(e)=>setLocationFiltre(e.target.value)}
                     >
                       <option>Douala</option>
                       <option>Yaoundé</option>
@@ -327,7 +360,7 @@ export default function Home() {
                     </Select>
                   </FormControl>
 
-                  <FormControl>
+                  {/* <FormControl>
                     <FormLabel fontWeight="semibold" color={textColor}>Catégories</FormLabel>
                     <VStack align="start" spacing={3}>
                       {Object.entries(categories).map(([key, value]) => (
@@ -341,11 +374,11 @@ export default function Home() {
                         </Checkbox>
                       ))}
                     </VStack>
-                  </FormControl>
+                  </FormControl> */}
 
-                  <Button colorScheme="primary">
+                  {/* <Button colorScheme="primary">
                     Appliquer les filtres
-                  </Button>
+                  </Button> */}
                 </VStack>
               </Card>
             </Box>
@@ -372,7 +405,7 @@ export default function Home() {
                 </GridItem>
               ))}
             </Grid>
-            
+
             {annonces.length > 0 && (
               <Pagination
                 currentPage={currentPage}
@@ -384,9 +417,9 @@ export default function Home() {
         </Flex>
 
         {/* Drawer de filtres pour mobile */}
-        <FiltersDrawer 
-          isOpen={isFiltersOpen} 
-          onClose={() => setIsFiltersOpen(false)} 
+        <FiltersDrawer
+          isOpen={isFiltersOpen}
+          onClose={() => setIsFiltersOpen(false)}
           categories={categories}
           handleCategoryChange={handleCategoryChange}
         />
@@ -405,10 +438,11 @@ export default function Home() {
             boxShadow="xl"
             zIndex="tooltip"
             _hover={{ transform: "scale(1.1)" }}
+            onClick={()=> window.open("https://wa.me/+237683950330?text=Hello%20je%20suis%20un%20utilisateur%20de%20votre%20plateforme%20bayisImmob%20et%20j'ai%20besoin%20d'assistance","_blank") }
           />
         </Tooltip>
       </Container>
-<Footer />
+      <Footer />
     </Box>
   );
 }

@@ -34,7 +34,6 @@ import {
 } from '@chakra-ui/icons';
 import axiosInstance from '@/api/axios'; 
 import { useAuth } from '@/hooks/useAuth'; 
-
 // Composant Section Paramètres réutilisable
 const SettingsSection = ({ icon, title, children }) => (
   <Card 
@@ -295,16 +294,7 @@ export default function Settings() {
                 }
               />
               
-              <SettingItem
-                label="Notifications"
-                description="Gérer vos préférences de notifications"
-                control={
-                  <Switch 
-                    defaultChecked 
-                    size={["md", "lg"]} 
-                  />
-                }
-              />
+           
             </VStack>
           </SettingsSection>
 
@@ -332,7 +322,7 @@ export default function Settings() {
                 }
               />
               
-              <SettingItem
+              {/* <SettingItem
                 label="Sessions actives"
                 description="Gérer vos appareils connectés"
                 control={
@@ -343,10 +333,11 @@ export default function Settings() {
                     Voir
                   </Button>
                 }
-              />
+              /> */}
             </VStack>
           </SettingsSection>
         </VStack>
+        
       </Container>
     );
 }

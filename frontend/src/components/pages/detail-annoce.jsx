@@ -32,9 +32,10 @@ import {
   ModalCloseButton,
   ModalBody,
   useBreakpointValue,
-  Flex
+  Flex,
+  Popover, PopoverTrigger, PopoverContent, PopoverArrow, PopoverCloseButton, PopoverBody
 } from "@chakra-ui/react";
-import { FaHeart, FaRegHeart, FaEllipsisH, FaThumbsUp, FaReply, FaStar, FaShare, FaPhone, FaMapMarkerAlt, FaBed, FaBath, FaRulerCombined,FaEnvelope } from "react-icons/fa";
+import { FaHeart, FaRegHeart, FaEllipsisH, FaThumbsUp, FaReply, FaStar, FaShare, FaPhone, FaMapMarkerAlt, FaBed, FaBath, FaRulerCombined, FaEnvelope, FaEye } from "react-icons/fa";
 import { useParams, useNavigate } from "react-router-dom";
 import axiosInstance from "@/api/axios";
 import Loading from "../partials/loading";
@@ -43,6 +44,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { baseUrl } from "@/config";
 import { gsap } from "gsap";
 import Footer from "../partials/footer";
+import ShareButton from "./partials/share";
 export default function DetailAnnonce() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -54,9 +56,10 @@ export default function DetailAnnonce() {
   const [replyCommentId, setReplyCommentId] = useState(null);
   const [userRating, setUserRating] = useState(0);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [vue,setVue]=useState(0)
   const { isOpen, onToggle } = useDisclosure();
   const { isOpen: isImageModalOpen, onOpen: onImageModalOpen, onClose: onImageModalClose } = useDisclosure();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const toast = useToast();
   const containerRef = useRef();
   const isMobile = useBreakpointValue({ base: true, md: false });
@@ -105,8 +108,12 @@ export default function DetailAnnonce() {
         setComments(commentsResponse.data);
         setIsFavorite(favorisResponse.data.is_favoris);
         setUserRating(noteResponse.data?.user_note || 0);
+        
         setLoading(false);
       } catch (err) {
+        console.log(err);
+        console.log(annonce);
+        
         toast({
           title: "Erreur",
           description: err.message,
@@ -122,110 +129,183 @@ export default function DetailAnnonce() {
     fetchData();
   }, [id, toast]);
 
-  // Gestion des favoris
+  const addView=async ()=>{
+    
+    if(isAuthenticated){
+      const viewResponse= await axiosInstance.post("/api/vues/",{
+        annonce:id,
+        user:user.id,
+      })
+      console.log("Reponse vue:",viewResponse);
+      
+
+    }
+
+  }
+
   const handleToggleFavorite = async () => {
-    try {
-      if (isFavorite) {
-        await axiosInstance.delete(`/api/favoris/${id}/supprimer-favori/`);
+    if (isAuthenticated) {
+      try {
+        if (isFavorite) {
+          await axiosInstance.delete(`/api/favoris/${id}/supprimer-favori/`);
+          toast({
+            title: "Retiré des favoris",
+            status: "success",
+            duration: 2000,
+            isClosable: true,
+          });
+        } else {
+          await axiosInstance.post("/api/favoris/", { annonce_id: id, user: user.id });
+          toast({
+            title: "Ajouté aux favoris",
+            description: "Vous pouvez retrouver cette annonce dans vos favoris",
+            status: "success",
+            duration: 2000,
+            isClosable: true,
+          });
+        }
+        setIsFavorite(!isFavorite);
+      } catch (err) {
+        console.log(err);
+
         toast({
-          title: "Retiré des favoris",
-          status: "success",
-          duration: 2000,
-          isClosable: true,
-        });
-      } else {
-        await axiosInstance.post("/api/favoris/", { annonce_id: id,user:user.id });
-        toast({
-          title: "Ajouté aux favoris",
-          description: "Vous pouvez retrouver cette annonce dans vos favoris",
-          status: "success",
-          duration: 2000,
+          title: "Erreur",
+          description: err.message,
+          status: "error",
+          duration: 3000,
           isClosable: true,
         });
       }
-      setIsFavorite(!isFavorite);
-    } catch (err) {
-      console.log(err);
-      
+    }
+    else {
       toast({
         title: "Erreur",
-        description: err.message,
+        description: "Vous devez vous authentifier avant de pouvoir realiser cette action",
         status: "error",
         duration: 3000,
         isClosable: true,
       });
     }
+
   };
 
   const handleDiscussion = async () => {
-    try {
-      const response = await axiosInstance.post("/api/discussions/", {
-        createur1: user.id,
-        createur2: annonce.creer_par.id,
-      })
-      navigate("/messages") // Rediriger vers la zone des messages
-    } catch (err) {
+
+    if (isAuthenticated) {
+      if (user.id == annonce.auteur_detail.id) {
+        toast({
+          title: "Erreur...",
+          description: `Vous ne pouvez pas demarrer une discussion avec vous même`,
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+          position:"top",
+        })
+
+      }
+      else {
+        try {
+          const response = await axiosInstance.post("/api/discussions/", {
+            createur1: user.id,
+            createur2: annonce.auteur_detail.id,
+          })
+          navigate("/messages") // Rediriger vers la zone des messages
+        } catch (err) {
+          toast({
+            title: "Erreur",
+            description: err.message,
+            status: "error",
+            duration: 3000,
+            isClosable: true,
+            position: "top",
+          })
+        }
+      }
+
+    } else {
       toast({
         title: "Erreur",
-        description: err.message,
+        description: "Vous devez vous authentifier avant de pouvoir Envoyez un message",
         status: "error",
         duration: 3000,
         isClosable: true,
-        position: "top",
-      })
+      });
     }
+
   }
 
   // Gestion des commentaires
   const handleAddComment = async (parentCommentaire = null) => {
-    if (!newComment.trim()) return;
-    
-    try {
-      const response = await axiosInstance.post("/api/commentaires/", {
-        texte: newComment,
-        annonce_id: id,
-        parent_commentaire: parentCommentaire,
-      });
-      setComments([...comments, response.data]);
-      setNewComment("");
-      setReplyCommentId(null);
-    } catch (err) {
+    if (isAuthenticated) {
+      if (!newComment.trim()) return;
+
+      try {
+        const response = await axiosInstance.post("/api/commentaires/", {
+          texte: newComment,
+          annonce_id: id,
+          parent_commentaire: parentCommentaire,
+        });
+        setComments([...comments, response.data]);
+        setNewComment("");
+        setReplyCommentId(null);
+      } catch (err) {
+        toast({
+          title: "Erreur",
+          description: err.message,
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    } else {
       toast({
         title: "Erreur",
-        description: err.message,
+        description: "Impossible d'envoyer un commentaire sans etre authentifier",
         status: "error",
         duration: 3000,
         isClosable: true,
       });
     }
+
   };
 
   // Gestion des notes
   const handleAddRating = async (valeur) => {
-    try {
-      await axiosInstance.post("/api/notes/", {
-        valeur: valeur,
-        annonce: id,
-        user: user.id,
-      });
-      setUserRating(valeur);
-      toast({
-        title: "Merci pour votre note !",
-        status: "success",
-        duration: 2000,
-        isClosable: true,
-      });
-    } catch (err) {
-      console.log(err);
-      
+    if (isAuthenticated) {
+      try {
+        await axiosInstance.post("/api/notes/", {
+          valeur: valeur,
+          annonce: id,
+          user: user.id,
+        });
+        setUserRating(valeur);
+        toast({
+          title: "Merci pour votre note !",
+          status: "success",
+          duration: 2000,
+          isClosable: true,
+        });
+      } catch (err) {
+        console.log(err);
+
+        toast({
+          title: "Erreur",
+          description: err.message,
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+        });
+      }
+    } else {
       toast({
         title: "Erreur",
-        description: err.message,
+        description: "Pour noter cette annonce veuillez d'abord vous authentifier",
         status: "error",
         duration: 3000,
         isClosable: true,
       });
     }
+
   };
 
   // Navigation entre images
@@ -241,6 +321,8 @@ export default function DetailAnnonce() {
 
   if (loading) return <Loading />;
 
+  addView()
+
   return (
     <Box bg={bgColor} minH="100vh" ref={containerRef}>
       <SimpleNavbar />
@@ -251,7 +333,7 @@ export default function DetailAnnonce() {
           <GridItem>
             {/* Galerie d'images */}
             <Box className="animate-section" mb={8}>
-              <AspectRatio ratio={16/9}>
+              <AspectRatio ratio={16 / 9}>
                 <Image
                   src={`${baseUrl}${annonce.photos[currentImageIndex]?.photo}`}
                   alt={`Image ${currentImageIndex + 1}`}
@@ -261,7 +343,7 @@ export default function DetailAnnonce() {
                   onClick={onImageModalOpen}
                 />
               </AspectRatio>
-              
+
               {annonce.photos.length > 1 && (
                 <HStack mt={4} spacing={2} overflowX="auto" py={2}>
                   {annonce.photos.map((photo, index) => (
@@ -292,18 +374,16 @@ export default function DetailAnnonce() {
             {/* Titre et prix */}
             <Box className="animate-section" mb={6}>
               <Flex justify="space-between" align="center">
-                <Heading size="xl" color={primaryTextColor} mb={2}>
+                <Heading size={{ base: "md", md: "xl" }} color={primaryTextColor} mb={2}>
                   {annonce.titre}
                 </Heading>
-                <Badge colorScheme={annonce.status === "a" ? "green" : "orange"} px={3} py={1}>
-                  {annonce.status === "a" ? "Disponible" : "En attente"}
-                </Badge>
+
               </Flex>
-              
+
               <Heading size="xl" color="primary.500" mb={4}>
                 {annonce.prix.toLocaleString()} Fcfa
               </Heading>
-              
+
               <Flex align="center" color={textColor} fontSize="sm">
                 <Icon as={FaMapMarkerAlt} mr={2} />
                 <Text>{annonce.localisation}</Text>
@@ -340,7 +420,7 @@ export default function DetailAnnonce() {
               <Heading size="md" mb={6} color={primaryTextColor}>
                 Commentaires ({comments.length})
               </Heading>
-              
+
               {/* Formulaire de commentaire */}
               <Flex mb={8} gap={3}>
                 <Avatar size="sm" name={user?.name} src={user?.avatar} />
@@ -462,32 +542,43 @@ export default function DetailAnnonce() {
                     <Heading size="md" color={primaryTextColor}>
                       Contact
                     </Heading>
-                    
+
                     <Flex align="center">
                       <Avatar
                         size="lg"
-                        name={annonce.creer_par}
-                        src={annonce.creer_par.avatar}
+                        name={annonce.auteur_detail.name}
+                        src={`${baseUrl}${annonce.auteur_detail.photo}`}
                         mr={4}
                       />
                       <Box>
                         <Text fontWeight="bold" color={primaryTextColor}>
-                          {annonce.creer_par}
+                          {annonce.auteur_detail.name}
                         </Text>
                         <Text color={textColor} fontSize="sm">
-                          Membre depuis {new Date(annonce.creer_par.date_joined).getFullYear()}
+                          Membre depuis {new Date(annonce.auteur_detail.date_joined).getFullYear()}
                         </Text>
                       </Box>
                     </Flex>
-                    
+
                     <VStack spacing={3} mt={4}>
-                      <Button
-                        colorScheme="primary"
-                        leftIcon={<FaPhone />}
-                        w="full"
-                      >
-                        Voir le numéro
-                      </Button>
+                      <Popover>
+                        <PopoverTrigger>
+                          <Button
+                            colorScheme="primary"
+                            leftIcon={<FaEye />}
+                            w="full"
+                          >
+                            Voir le numéro
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent>
+                          <PopoverArrow />
+                          <PopoverCloseButton />
+                          <PopoverBody>
+                            {annonce.auteur_detail.phone}
+                          </PopoverBody>
+                        </PopoverContent>
+                      </Popover>
                       <Button
                         variant="outline"
                         colorScheme="primary"
@@ -506,15 +597,15 @@ export default function DetailAnnonce() {
               <Card className="animate-section" bg={cardBg} boxShadow="sm">
                 <CardBody>
                   <VStack spacing={4}>
-                    <Button
+                    {/* <Button
                       colorScheme="primary"
                       size="lg"
                       w="full"
                       leftIcon={<FaPhone />}
                     >
                       Contacter
-                    </Button>
-                    
+                    </Button> */}
+
                     <Button
                       variant={isFavorite ? "solid" : "outline"}
                       colorScheme={isFavorite ? "red" : "primary"}
@@ -525,16 +616,8 @@ export default function DetailAnnonce() {
                     >
                       {isFavorite ? "Favori" : "Ajouter aux favoris"}
                     </Button>
-                    
-                    <Button
-                      variant="outline"
-                      colorScheme="primary"
-                      size="lg"
-                      w="full"
-                      leftIcon={<FaShare />}
-                    >
-                      Partager
-                    </Button>
+                    <ShareButton />
+
                   </VStack>
                 </CardBody>
               </Card>
@@ -577,7 +660,7 @@ export default function DetailAnnonce() {
         <ModalContent bg="transparent" boxShadow="none">
           <ModalCloseButton color="white" bg="blackAlpha.600" _hover={{ bg: "blackAlpha.700" }} />
           <ModalBody p={0}>
-            <AspectRatio ratio={16/9}>
+            <AspectRatio ratio={16 / 9}>
               <Image
                 src={`${baseUrl}${annonce.photos[currentImageIndex]?.photo}`}
                 alt={`Image ${currentImageIndex + 1}`}

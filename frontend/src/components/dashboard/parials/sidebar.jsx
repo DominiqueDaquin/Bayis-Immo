@@ -8,7 +8,11 @@ import {
   Button,
   Badge,
   Flex,
-  Spinner
+  Spinner,
+  Avatar,
+  VStack,
+  Divider,
+  useToast
 } from "@chakra-ui/react"
 import {
   FiHome,
@@ -19,28 +23,13 @@ import {
   FiBarChart,
   FiGift,
   FiMonitor,
+  FiLogOut,
+  FiArrowLeft
 } from "react-icons/fi"
 import { useEffect, useState } from "react"
 import axiosInstance from "@/api/axios"
 import { useAuth } from "@/hooks/useAuth"
-import HomeDashboard from "../home"
-import Chat from "../chat"
-import Annonce from "../annonce"
-import Tombola from "../tombola/tombola"
-import Notifications from "../notification"
-import GestionnaireCampagnes from "../publicite"
-import ProfileSettings from "../settings"
-
-// Composants associés à chaque élément du menu
-const DashboardContent = () => <HomeDashboard />
-const AnnouncementsContent = () => <Annonce/>
-const TombolaContent = () => <Tombola isModerateur={false} />
-const AdsContent = () => <GestionnaireCampagnes isModerateur={false}/>
-const NotificationsContent = () => <Notifications/>
-const MessagesContent = () => <Chat/>
-const StatisticsContent = () => <Text>Statistiques</Text>
-const SettingsContent = () => <ProfileSettings/>
-
+import { useNavigate } from "react-router-dom"
 const NavItem = ({ icon, children, onClick, badgeCount, ...rest }) => {
   return (
     <Button
@@ -72,13 +61,16 @@ const NavItem = ({ icon, children, onClick, badgeCount, ...rest }) => {
   )
 }
 
-const SidebarContent = ({ onClose = null, setActiveMenu }) => {
+const SidebarContent = ({ onClose = null, setActiveMenu, setActiveTab, components }) => {
   const [counts, setCounts] = useState({ 
     unread_discussions: 0, 
     unread_notifications: 0 
   })
   const [loading, setLoading] = useState(true)
-  const { user } = useAuth()
+  const { user, logout,userDetail } = useAuth()
+  const navigate = useNavigate()
+  const toast = useToast()
+
 
   useEffect(() => {
     const fetchUnreadCounts = async () => {
@@ -93,31 +85,39 @@ const SidebarContent = ({ onClose = null, setActiveMenu }) => {
     }
 
     fetchUnreadCounts()
-    
-    // Mettre à jour périodiquement (toutes les 30 secondes)
     const interval = setInterval(fetchUnreadCounts, 30000)
     return () => clearInterval(interval)
   }, [user])
 
+  const handleLogout = () => {
+    logout()
+    toast({
+      title: "Déconnexion réussie",
+      status: "success",
+      duration: 3000,
+      isClosable: true,
+    })
+    navigate("/login")
+  }
+
   const navItems = [
-    { label: "Tableau de bord", icon: FiHome, component: <DashboardContent /> },
-    { label: "Annonces", icon: FiCompass, component: <AnnouncementsContent /> },
-    { label: "Tombola", icon: FiGift, component: <TombolaContent /> },
-    { label: "Publicité", icon: FiMonitor, component: <AdsContent /> },
+    { label: "Tableau de bord", key: "dashboard", icon: FiHome },
+    { label: "Annonces", key: "annonces", icon: FiCompass },
+    { label: "Tombola", key: "tombola", icon: FiGift },
+    { label: "Publicité", key: "publicite", icon: FiMonitor },
     { 
       label: "Notifications", 
+      key: "notifications", 
       icon: FiBell, 
-      component: <NotificationsContent />,
       badgeCount: loading ? 0 : counts.unread_notifications
     },
     { 
       label: "Messages", 
+      key: "messages", 
       icon: FiMessageSquare, 
-      component: <MessagesContent />,
       badgeCount: loading ? 0 : counts.unread_discussions 
     },
-    { label: "Statistiques", icon: FiBarChart, component: <StatisticsContent /> },
-    { label: "Paramètres", icon: FiSettings, component: <SettingsContent /> },
+    { label: "Paramètres", key: "settings", icon: FiSettings },
   ]
 
   return (
@@ -127,29 +127,80 @@ const SidebarContent = ({ onClose = null, setActiveMenu }) => {
       borderRightColor={useColorModeValue("gray.200", "gray.700")}
       w={{ base: "full", md: 60 }}
       h="full"
-      py={8}
+      display="flex"
+      flexDirection="column"
     >
-      {loading ? (
-        <Flex justify="center" pt={4}>
-          <Spinner size="sm" />
-        </Flex>
-      ) : (
-        <Stack spacing={4}>
-          {navItems.map((item) => (
-            <NavItem
-              key={item.label}
-              icon={item.icon}
-              onClick={() => {
-                setActiveMenu(item.component)
-                if (onClose) onClose()
-              }}
-              badgeCount={item.badgeCount || 0}
-            >
-              {item.label}
-            </NavItem>
-          ))}
+      {/* Zone avatar en haut */}
+      <Box p={4} textAlign="center">
+        <VStack spacing={3}>
+          <Avatar 
+            size="lg" 
+            name={user?.name || user?.email} 
+            src={userDetail?.photo}
+            bg="blue.500"
+            color="white"
+          />
+          <Text fontWeight="bold">{user?.name || user?.email}</Text>
+          {user?.role && (
+            <Badge colorScheme="blue" borderRadius="full" px={2}>
+              {user.role}
+            </Badge>
+          )}
+        </VStack>
+      </Box>
+
+      <Divider />
+
+      {/* Contenu principal */}
+      <Box flex="1" overflowY="auto" py={4}>
+        {loading ? (
+          <Flex justify="center" pt={4}>
+            <Spinner size="sm" />
+          </Flex>
+        ) : (
+          <Stack spacing={1}>
+            {navItems.map((item) => (
+              <NavItem
+                key={item.key}
+                icon={item.icon}
+                onClick={() => {
+                  setActiveTab(item.key)
+                  setActiveMenu(components[item.key])
+                  if (onClose) onClose()
+                }}
+                badgeCount={item.badgeCount || 0}
+              >
+                {item.label}
+              </NavItem>
+            ))}
+          </Stack>
+        )}
+      </Box>
+
+      <Divider />
+
+      {/* Boutons en bas */}
+      <Box p={4}>
+        <Stack spacing={3}>
+          <Button
+            leftIcon={<Icon as={FiArrowLeft} />}
+            variant="ghost"
+            justifyContent="flex-start"
+            onClick={() => navigate("/annonce")}
+          >
+            Retour à l'accueil
+          </Button>
+          <Button
+            leftIcon={<Icon as={FiLogOut} />}
+            colorScheme="red"
+            variant="ghost"
+            justifyContent="flex-start"
+            onClick={handleLogout}
+          >
+            Déconnexion
+          </Button>
         </Stack>
-      )}
+      </Box>
     </Box>
   )
 }

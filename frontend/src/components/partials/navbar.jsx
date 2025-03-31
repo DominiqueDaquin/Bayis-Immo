@@ -48,7 +48,7 @@ export default function SimpleNavbar() {
   // Liens de navigation
   const commonLinks = [
     { label: "Accueil", href: "/annonce", icon: <FaHome /> },
-    { label: "Tombolas", href: "/tombolas", icon: <FaTrophy /> },
+    { label: "Cagnotte", href: "/tombolas", icon: <FaTrophy /> },
   ];
 
   const normalUserLinks = [
@@ -210,11 +210,7 @@ export default function SimpleNavbar() {
                 _hover={{ transform: "scale(1.1)", boxShadow: "md" }}
                 transition="all 0.2s"
               />
-              {userDetail?.name && (
-                <Text ml={3} fontWeight="medium" color={textColor} display={{ base: "none", md: "block" }}>
-                  {userDetail.name}
-                </Text>
-              )}
+              
             </Flex>
           )}
         </HStack>

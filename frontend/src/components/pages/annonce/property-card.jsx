@@ -119,11 +119,12 @@ const PropertyCard = ({ property, isFavorite, onToggleFavorite, id }) => {
             <Flex align="center" w="full" pt={2}>
               <Avatar 
                 size="sm" 
-                src={property.creer_par?.avatar || "https://bit.ly/dan-abramov"} 
+                name={ property.profil_auteur || property.creer_par } 
+                src={`${baseUrl}${property.auteur_detail.photo}`} 
                 mr={2}
               />
               <Text fontSize="sm" color={useColorModeValue("neutral.600", "neutral.300")} flex={1}>
-                {property.creer_par?.name || "Anonyme"}
+                {property.creer_par || "Anonyme"}
               </Text>
               <Button 
                 size="sm" 

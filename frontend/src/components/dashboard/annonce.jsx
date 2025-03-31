@@ -43,7 +43,7 @@ import {
   DrawerOverlay,
   DrawerContent,
   DrawerCloseButton,
-  useColorModeValue
+  useColorModeValue,
 
 } from "@chakra-ui/react"
 import {
@@ -53,7 +53,9 @@ import {
   FiPlus,
   FiEdit2,
   FiTrash2,
-  FiEye
+  FiEye,
+  FiCheck,
+  FiX
 
 } from "react-icons/fi"
 import ImageCarousel from "./annonce-image-carrousel"
@@ -65,7 +67,8 @@ import { useAuth } from "@/hooks/useAuth"
 import Loading from "../partials/loading"
 import { baseUrl } from "@/config"
 
-export default function Annonce() {
+
+export default function Annonce({ isModerateur }) {
   const { isOpen: isViewOpen, onOpen: onViewOpen, onClose: onViewClose } = useDisclosure()
   const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure()
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure()
@@ -73,9 +76,10 @@ export default function Annonce() {
   const [selectedProperty, setSelectedProperty] = useState(null)
   const [properties, setProperties] = useState([])
   const [isLoading, setIsLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState("")
   const cancelRef = React.useRef()
-  const toast=useToast();
-  const {user}=useAuth();
+  const toast = useToast();
+  const { user } = useAuth();
   const isMobile = useBreakpointValue({ base: true, md: false })
   const modalSize = useBreakpointValue({ base: "full", md: "xl" })
   // Couleurs du thème
@@ -85,12 +89,15 @@ export default function Annonce() {
   const borderColor = useColorModeValue("neutral.200", "neutral.700")
   const textColor = useColorModeValue("neutral.800", "neutral.100")
 
+  const filteredAnnonce = properties
+    .filter((t) => t.titre.toLowerCase().includes(searchQuery.toLowerCase()))
 
   useEffect(() => {
     const fetchAnnonces = async () => {
       try {
-        const response = await axiosInstance.get("/api/annonces/mes-annonces")
-          
+        const endpoint = isModerateur ? "/api/annonces/" : "/api/annonces/mes-annonces"
+        const response = await axiosInstance.get(endpoint)
+
         setProperties(response.data)
       } catch (error) {
         console.error("Erreur lors de la récupération des annonces:", error)
@@ -109,6 +116,8 @@ export default function Annonce() {
       case "p":
         return "orange"
       case "d":
+        return "gray"
+      case "r":
         return "red"
       default:
         return "gray"
@@ -123,6 +132,8 @@ export default function Annonce() {
         return "En attente"
       case "d":
         return "Désactivé"
+      case "r":
+        return "Rejetté"
       default:
         return status
     }
@@ -146,35 +157,37 @@ export default function Annonce() {
   }
 
   const handleCreateSubmit = async (formData) => {
+    console.log("Données recues:", formData);
+
     try {
-      const response = await axiosInstance.post("/api/annonces/",{...formData,creer_par:user.id},
+      const response = await axiosInstance.post("/api/annonces/", { ...formData, creer_par: user.id },
         {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
         }
       )
-      
+
       const newProperty = response.data
-      setProperties([...properties, newProperty])
+      setProperties([newProperty,...properties])
       onCreateClose()
       toast(
         {
-          title:"Annonce Creer a success",
-          status:"success",
-          duration:5000,
-          isClosable:true
+          title: "Annonce Creer a success",
+          status: "success",
+          duration: 5000,
+          isClosable: true
         }
       )
     } catch (error) {
-      
+
       toast(
         {
-          title:"Erreur lors de la creation de l'annonce",
-          description:error.response?.data?.prix || "impossible de creer cette annonce, veuillez reessayez",
-          status:"error",
-          duration:5000,
-          isClosable:true
+          title: "Erreur lors de la creation de l'annonce",
+          description: error.response?.data?.prix || "impossible de creer cette annonce, veuillez reessayez",
+          status: "error",
+          duration: 5000,
+          isClosable: true
         }
       )
       console.error("Erreur lors de la création de l'annonce:", error)
@@ -208,19 +221,22 @@ export default function Annonce() {
 
   const renderPropertyList = () => {
     if (isLoading) {
-      return <Loading/>
+      return <Loading />
     }
 
     if (isMobile) {
       return (
         <VStack spacing={4} align="stretch">
-          {properties.map((property) => (
+          {filteredAnnonce.map((property) => (
             <PropertyCard
               key={property.id}
               property={property}
               onView={handleViewProperty}
               onEdit={handleEditProperty}
               onDelete={handleDeleteProperty}
+              isModerateur={isModerateur}
+              handleViewProperty={handleViewProperty}
+              handleStatusChange={handleStatusChange}
             />
           ))}
         </VStack>
@@ -228,7 +244,7 @@ export default function Annonce() {
     }
 
     return (
-      <Box overflowX="auto" bg={bgColor} borderRadius="md" boxShadow="sm">
+      <Box overflowX="auto" bg={bgColor} borderRadius="md" boxShadow="sm" minH="100vh" >
         <Table variant="simple">
           <Thead bg={bgColor}>
             <Tr>
@@ -242,19 +258,22 @@ export default function Annonce() {
             </Tr>
           </Thead>
           <Tbody>
-            {properties.map((property) => (
+            {filteredAnnonce.map((property) => (
               <Tr
                 key={property.id}
                 cursor="pointer"
+                bg={headerBg}
+
                 _hover={{ bg: bgColor }}
-                onClick={() => handleViewProperty(property)}
-                bg={bgColor}
+                onClick={() =>isModerateur ?(""): handleViewProperty(property)}
+
               >
                 <Td>
                   {property.photos.length > 0 ? (
                     <Image
-                      src={`${baseUrl}${property.photos[0].photo}`}
+                      src={`${baseUrl}${property.photos[0].photo}` || property.photos[0].photo}
                       alt={property.titre}
+
                       boxSize="100px"
                       objectFit="cover"
                       borderRadius="md"
@@ -270,8 +289,8 @@ export default function Annonce() {
                   )}
                 </Td>
                 <Td>
-                  <VStack align="start" spacing={1}>
-                    <Text fontWeight="bold">{property.titre}</Text>
+                  <VStack align="start" spacing={1} isTruncated>
+                    <Text fontWeight="bold">{property.titre.length>20?property.titre.slice(0,10)+"...":property.titre}</Text>
                   </VStack>
                 </Td>
                 <Td>
@@ -281,8 +300,8 @@ export default function Annonce() {
                 </Td>
 
                 <Td>
-                  <Text fontSize="sm" color="gray.600" noOfLines={2}>
-                    {property.description}
+                  <Text fontSize="sm" color="gray.600" isTruncated>
+                    {property.description.length > 100 ? property.description.slice(0, 10) + "..." : property.description}
                   </Text>
                 </Td>
                 <Td>
@@ -290,7 +309,34 @@ export default function Annonce() {
                 </Td>
                 <Td>{new Date(property.creer_le).toLocaleDateString()}</Td>
                 <Td>
-                  <HStack spacing={2}>
+
+                  {isModerateur ? (
+                    <>
+                      <HStack>
+                        <IconButton 
+                        icon={<FiEye />}
+                        aria-label="voir"
+                        colorScheme="green"
+                        onClick={()=>handleViewProperty(property)}
+                        />
+                        <IconButton
+                          icon={<FiCheck />}
+                          aria-label="Valider"
+                          colorScheme="green"
+                          onClick={() => handleStatusChange(property.id, "a")}
+
+                        />
+                        <IconButton
+                          icon={<FiX />}
+                          aria-label="Rejeter"
+                          colorScheme="red"
+                          onClick={() => handleStatusChange(property.id, "r")}
+
+                        />
+                      </HStack>
+
+                    </>
+                  ) : <HStack spacing={2}>
                     <IconButton
                       icon={<FiEye />}
                       aria-label="Voir"
@@ -299,14 +345,14 @@ export default function Annonce() {
                         e.stopPropagation()
                         handleViewProperty(property)
                       }}
-                      bg={bgColor}
+
                     />
                     <IconButton
                       icon={<FiEdit2 />}
                       aria-label="Modifier"
                       size="sm"
                       onClick={(e) => handleEditProperty(property, e)}
-                      bg={bgColor}
+
                     />
                     <IconButton
                       icon={<FiTrash2 />}
@@ -315,7 +361,7 @@ export default function Annonce() {
                       colorScheme="red"
                       onClick={(e) => handleDeleteProperty(property, e)}
                     />
-                  </HStack>
+                  </HStack>}
                 </Td>
               </Tr>
             ))}
@@ -325,9 +371,55 @@ export default function Annonce() {
     )
   }
 
+  const handleStatusChange = async (annonceId, newStatus) => {
+    try {
+      const response = await axiosInstance.patch(`/api/annonces/${annonceId}/`, { status: newStatus })
+      setProperties(properties.map((t) => (t.id === annonceId ? response.data : t)))
+      toast({
+        title: "Succès",
+        description: `L'annonce' a été ${newStatus === "a" ? "validée" : "rejetée"} avec succès.`,
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      })
+      
+    if(response.status==200){
+      try {
+        let message=`votre annonce à été ${newStatus=='a' ?"Approuvé":"Rejeté"}`
+        const Notificationresponse = await axiosInstance.post(`/api/notifications/`, { user:response.data.auteur_detail.id ,message:message,type:"a" })
+        if(Notificationresponse.status==201){
+          toast({
+            title:"Notification envoyée",
+            description:"Une notification à été envoyeée a l'annonceur pour le prevenir de votre décision sur son annonce ",
+            status:"success",
+            duration:5000,
+            isClosable:true,
+          })
+        }
+        
+      } catch (error) {
+        console.log(error);
+        
+      }
+    }
+    
+
+
+    } catch (error) {
+
+      toast({
+        title: "Erreur",
+        description: `Une erreur est survenue lors  ${newStatus === "a" ? "de la validation" : " du rejet"} de l"annonce.`,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      })
+    }
+  }
+
   return (
     <Box bg={bgColor} minH="100vh" w="100%">
-      <Container maxW="7xl" py={8} px={{ base: 4, md: 8 }}>
+      <Container maxW="7xl" py={8} px={{ base: 0, md: 8 }}>
         <Flex
           justify="space-between"
           align="center"
@@ -336,7 +428,7 @@ export default function Annonce() {
           direction={{ base: "column", sm: "row" }}
           gap={{ base: 4, sm: 0 }}
         >
-          <Heading size="lg">Annonces Immobilières</Heading>
+          <Heading size="lg"> {isModerateur ? "Annonces à valider" : "Annonces Immobilières"}  </Heading>
           <Button leftIcon={<FiPlus />} colorScheme="blue" onClick={onCreateOpen} w={{ base: "full", sm: "auto" }}>
             Créer une annonce
           </Button>
@@ -347,14 +439,12 @@ export default function Annonce() {
             <InputLeftElement pointerEvents="none">
               <FiSearch color="gray.300" />
             </InputLeftElement>
-            <Input placeholder="Rechercher une annonce..." bg={bgColor} />
+            <Input placeholder="Rechercher une annonce..." bg={headerBg} onChange={(e) => setSearchQuery(e.target.value)} />
           </InputGroup>
-          
+
         </Flex>
 
-        <Box overflowX="auto">
-          <Filters onFilterChange={(filter) => console.log(filter)} />
-        </Box>
+
 
         {renderPropertyList()}
 
@@ -381,6 +471,9 @@ export default function Annonce() {
                         </Text>
                         <Text>{selectedProperty.description}</Text>
                       </Box>
+
+                  {
+                    selectedProperty.auteur_detail.id==user.id && (
                       <SimpleGrid columns={2} spacing={4} w="full" pt={4}>
                         <Button
                           colorScheme="blue"
@@ -405,6 +498,10 @@ export default function Annonce() {
                           Supprimer
                         </Button>
                       </SimpleGrid>
+                    )
+                  }
+
+                      
                     </VStack>
                   </VStack>
                 )}
@@ -434,26 +531,35 @@ export default function Annonce() {
                         <Text>{selectedProperty.description}</Text>
                       </Box>
                       <HStack spacing={4}>
-                        <Button
-                          colorScheme="blue"
-                          leftIcon={<FiEdit2 />}
-                          onClick={() => {
-                            onViewClose()
-                            handleEditProperty(selectedProperty)
-                          }}
-                        >
-                          Modifier
-                        </Button>
-                        <Button
-                          colorScheme="red"
-                          leftIcon={<FiTrash2 />}
-                          onClick={() => {
-                            onViewClose()
-                            handleDeleteProperty(selectedProperty)
-                          }}
-                        >
-                          Supprimer
-                        </Button>
+                        {
+                          selectedProperty.auteur_detail.id == user.id && (
+                            <>
+                            <Button
+                            colorScheme="blue"
+                            leftIcon={<FiEdit2 />}
+                            onClick={() => {
+                              onViewClose()
+                              handleEditProperty(selectedProperty)
+                            }}
+                          >
+                            Modifier
+                          </Button>
+                          <Button
+                            colorScheme="red"
+                            leftIcon={<FiTrash2 />}
+                            onClick={() => {
+                              onViewClose()
+                              handleDeleteProperty(selectedProperty)
+                            }}
+                          >
+                            Supprimer
+                          </Button>
+                            </>
+                            
+                          )
+                        }
+
+
                       </HStack>
                     </VStack>
                   </VStack>
@@ -500,10 +606,10 @@ export default function Annonce() {
                     <Text mb={4}>
                       Êtes-vous sûr de vouloir supprimer cette annonce ? Cette action ne peut pas être annulée.
                     </Text>
-                    <Box p={4} bg="gray.50" borderRadius="md">
-                      <Text fontWeight="bold">{selectedProperty.titre}</Text>
-                      <Text fontSize="sm" color="gray.600" mt={1}>
-                        {new Date(selectedProperty.creer_le).toLocaleDateString()}
+                    <Box p={4} borderRadius="md">
+                      <Text fontWeight="bold" color={textColor} >{selectedProperty.titre}</Text>
+                      <Text fontSize="sm" color={textColor} mt={1}>
+                        Creer le {new Date(selectedProperty.creer_le).toLocaleDateString()}
                       </Text>
                     </Box>
                   </>

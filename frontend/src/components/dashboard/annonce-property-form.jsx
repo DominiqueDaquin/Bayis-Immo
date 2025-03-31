@@ -43,7 +43,17 @@ const PropertyForm = ({ property, onSubmit, onCancel }) => {
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files)
-    
+    if(files.length>6){
+      toast({
+        title: "Fichiers trop nombreux",
+        description: `Nous sommes désolé mais votre annonce ne peut contenir plus de 6 photos`,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      })
+      return false
+    }
+
     if (files.length > 0) {
       const validFiles = files.filter(file => {
         if (!file.type.startsWith('image/')) {
@@ -121,7 +131,7 @@ const PropertyForm = ({ property, onSubmit, onCancel }) => {
   
     // 3. Ajout des images (format adapté à Django)
     formData.photos_upload.forEach(file => {
-      formDataToSend.append("photos_upload", file) // Nom exact du champ attendu
+      formDataToSend.append("photos_upload", file)
     })
   const my_data={}
 
@@ -140,7 +150,7 @@ const PropertyForm = ({ property, onSubmit, onCancel }) => {
       <VStack spacing={6} align="stretch">
         {/* Section Upload d'images */}
         <FormControl>
-          <FormLabel>Images de l'annonce (max 10)</FormLabel>
+          <FormLabel>Images de l'annonce (max 6)</FormLabel>
           <Box 
             border="2px dashed" 
             borderColor="gray.200" 
@@ -162,7 +172,7 @@ const PropertyForm = ({ property, onSubmit, onCancel }) => {
                 isDisabled={uploadedImages.length >= 10}
               />
               <Text mt={2} fontSize="sm" color="gray.500">
-                {uploadedImages.length >= 10 
+                {uploadedImages.length >= 6 
                   ? "Nombre maximum d'images atteint" 
                   : "Glissez-déposez ou cliquez pour télécharger des images (JPEG, PNG, max 5MB)"}
               </Text>
@@ -173,7 +183,7 @@ const PropertyForm = ({ property, onSubmit, onCancel }) => {
                 accept="image/jpeg,image/png"
                 onChange={handleImageUpload}
                 display="none"
-                disabled={uploadedImages.length >= 10}
+                disabled={uploadedImages.length >= 6}
               />
             </Flex>
           </Box>

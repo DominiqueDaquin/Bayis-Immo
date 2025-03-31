@@ -17,7 +17,8 @@ import {
   ModalBody,
   ModalFooter,
   useToast,
-  Checkbox
+  Checkbox,
+  Flex
 } from "@chakra-ui/react";
 import { BaseForm } from "./base-form";
 import React, { useState } from "react";
@@ -29,7 +30,8 @@ import {
   FiPhone, 
   FiLock, 
   FiEye, 
-  FiEyeOff 
+  FiEyeOff,
+  FiCheck
 } from "react-icons/fi";
 
 export const SignupForm = () => {
@@ -40,38 +42,121 @@ export const SignupForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isAnnonceur, setIsAnnonceur] = useState(false);
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [userEnteredCode, setUserEnteredCode] = useState("");
+  
+  const { 
+    isOpen: isVerificationModalOpen, 
+    onOpen: onVerificationModalOpen, 
+    onClose: onVerificationModalClose 
+  } = useDisclosure();
+  
+  const { 
+    isOpen: isChoiceModalOpen, 
+    onOpen: onChoiceModalOpen, 
+    onClose: onChoiceModalClose 
+  } = useDisclosure();
+  
   const [tempUserData, setTempUserData] = useState(null);
   const toast = useToast();
   const navigate = useNavigate();
 
+  const generateVerificationCode = () => {
+    // Génère un code de 6 chiffres
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!acceptedTerms) {
+      toast({
+        title: "Erreur",
+        description: "Vous devez accepter les CGU pour vous inscrire.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      const response = await axiosInstance.post("/auth/users/", {
+      // Générer et stocker le code de vérification
+      const code = generateVerificationCode();
+      setVerificationCode(code);
+      
+      // Envoyer le code par email
+      const emailResponse = await axiosInstance.post("/api/send-mail/", {
         email: email,
-        name: name,
-        phone: phone,
-        password: password,
-        username: email,
+        objet: "Code de vérification",
+        body: `Votre code de vérification est : ${code}. Ce code expirera dans 5 minutes.`
       });
 
-      if (response.status === 201) {
-        setTempUserData(response.data);
-        onOpen(); // Ouvrir la popup après inscription réussie
+      if (emailResponse.status === 200) {
+        toast({
+          title: "Code envoyé",
+          description: emailResponse.data.detail || "Un code de vérification a été envoyé à votre adresse email.",
+          status: "success",
+          duration: 5000,
+          isClosable: true,
+        });
+        onVerificationModalOpen();
       }
     } catch (error) {
+      console.log(error);
       toast({
-        title: "Erreur lors de l'inscription.",
-        description: error.response?.data?.detail || "Une erreur s'est produite.",
+        title: "Erreur",
+        description: error.response?.data?.detail || "Une erreur s'est produite lors de l'envoi du code de vérification.",
         status: "error",
         duration: 5000,
         isClosable: true,
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleVerification = async () => {
+    if (userEnteredCode === verificationCode) {
+      // Code correct, procéder à l'inscription
+      setIsLoading(true);
+      try {
+        const response = await axiosInstance.post("/auth/users/", {
+          email: email,
+          name: name,
+          phone: phone,
+          password: password,
+          username: email,
+        });
+
+        if (response.status === 201) {
+          setTempUserData(response.data);
+          onVerificationModalClose();
+          onChoiceModalOpen();
+        }
+      } catch (error) {
+        console.log(error);
+        toast({
+          title: "Erreur lors de l'inscription.",
+          description: error.response?.data?.password || "Une erreur s'est produite.",
+          status: "error",
+          duration: 5000,
+          isClosable: true,
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      toast({
+        title: "Code incorrect",
+        description: "Le code de vérification que vous avez entré est incorrect.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
     }
   };
 
@@ -104,7 +189,7 @@ export const SignupForm = () => {
         isClosable: true,
       });
     } finally {
-      onClose();
+      onChoiceModalClose();
     }
   };
 
@@ -116,7 +201,7 @@ export const SignupForm = () => {
       >
         <Box mb={4}>
           <Text as="label" htmlFor="name" display="block" mb={2} fontSize="sm" fontWeight="medium">
-            Nom complet
+            Nom complet<sup >*</sup>
           </Text>
           <InputGroup>
             <InputLeftElement pointerEvents="none">
@@ -137,7 +222,7 @@ export const SignupForm = () => {
 
         <Box mb={4}>
           <Text as="label" htmlFor="email" display="block" mb={2} fontSize="sm" fontWeight="medium">
-            Adresse Email
+            Adresse Email <sup >*</sup>
           </Text>
           <InputGroup>
             <InputLeftElement pointerEvents="none">
@@ -158,7 +243,7 @@ export const SignupForm = () => {
 
         <Box mb={4}>
           <Text as="label" htmlFor="phone" display="block" mb={2} fontSize="sm" fontWeight="medium">
-            Téléphone
+            Téléphone 
           </Text>
           <InputGroup>
             <InputLeftElement pointerEvents="none">
@@ -179,7 +264,7 @@ export const SignupForm = () => {
 
         <Box mb={4}>
           <Text as="label" htmlFor="password" display="block" mb={2} fontSize="sm" fontWeight="medium">
-            Mot de passe
+            Mot de passe <sup >*</sup>
           </Text>
           <InputGroup>
             <InputLeftElement pointerEvents="none">
@@ -206,6 +291,18 @@ export const SignupForm = () => {
           </InputGroup>
         </Box>
 
+        <Flex mb={4} align="center">
+          <Checkbox
+            isChecked={acceptedTerms}
+            onChange={(e) => setAcceptedTerms(e.target.checked)}
+            colorScheme="blue"
+            mr={2}
+          />
+          <Text fontSize="sm">
+            J'accepte les <Link color="blue.500" href="/cgu" target="_blank">Conditions Générales d'Utilisation</Link>
+          </Text>
+        </Flex>
+
         <Button
           type="submit"
           colorScheme="blue"
@@ -213,7 +310,10 @@ export const SignupForm = () => {
           width="full"
           borderRadius="md"
           isLoading={isLoading}
-          loadingText="Inscription en cours..."
+          loadingText="Envoi du code..."
+          isDisabled={!acceptedTerms}
+          opacity={!acceptedTerms ? 0.7 : 1}
+          cursor={!acceptedTerms ? "not-allowed" : "pointer"}
         >
           S'inscrire
         </Button>
@@ -226,8 +326,46 @@ export const SignupForm = () => {
         </Text>
       </BaseForm>
 
+      {/* Modal de vérification du code */}
+      <Modal isOpen={isVerificationModalOpen} onClose={onVerificationModalClose} isCentered>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Vérification de l'email</ModalHeader>
+          <ModalBody>
+            <Text mb={4}>Un code de vérification a été envoyé à {email}. Veuillez l'entrer ci-dessous :</Text>
+            <Input
+              placeholder="Code de vérification"
+              value={userEnteredCode}
+              onChange={(e) => setUserEnteredCode(e.target.value)}
+              size="lg"
+              mb={4}
+            />
+            <Text fontSize="sm" color="gray.500">
+              Ce code expirera dans 5 minutes.
+            </Text>
+          </ModalBody>
+          <ModalFooter>
+            <Button 
+              variant="outline" 
+              mr={3} 
+              onClick={onVerificationModalClose}
+            >
+              Annuler
+            </Button>
+            <Button 
+              colorScheme="blue" 
+              onClick={handleVerification}
+              isLoading={isLoading}
+              leftIcon={<FiCheck />}
+            >
+              Vérifier
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
       {/* Popup de choix du type de compte */}
-      <Modal isOpen={isOpen} onClose={onClose} isCentered>
+      <Modal isOpen={isChoiceModalOpen} onClose={onChoiceModalClose} isCentered>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>Type de compte</ModalHeader>

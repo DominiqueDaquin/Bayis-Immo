@@ -27,7 +27,8 @@ import {
   useColorModeValue,
   Badge
 } from "@chakra-ui/react";
-import { FiMenu, FiSend, FiSmile, FiInfo, FiMoreVertical, FiCheck, FiCheckCircle } from "react-icons/fi";
+import { FiMenu, FiSend, FiSmile, FiInfo, FiMoreVertical, FiCheck, FiCheckCircle,FiSpeaker } from "react-icons/fi";
+import { FaUsers } from "react-icons/fa";
 import ContactList from "./chat-contact-item";
 import Message from "./chat-messages";
 import axiosInstance from "@/api/axios";
@@ -55,7 +56,6 @@ const DateDivider = ({ date }) => {
     </Flex>
   );
 };
-
 const groupMessagesByDate = (messages) => {
   const grouped = {};
   messages.forEach(message => {
@@ -67,7 +67,6 @@ const groupMessagesByDate = (messages) => {
   });
   return grouped;
 };
-
 export default function Chat() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedContact, setSelectedContact] = useState(null);
@@ -204,13 +203,14 @@ export default function Chat() {
 
   return (
     <Container maxW="100%" h="100vh" p={0}>
+
       <Flex h="full" overflow="hidden">
         <Box
           w="350px"
           borderRight="1px"
           borderColor="gray.200"
           bg={sidebarBg}
-          display={{ base: "none", md: "block" }}
+          display={{ base: "none", lg: "block" }}
           h="80vh"
           overflowY="hidden"
         >
@@ -223,9 +223,9 @@ export default function Chat() {
         <Flex flex="1" direction="column" bg={sidebarBg} h="80vh" overflow="hidden">
           <Flex p={4} align="center" borderBottom="1px" borderColor="gray.200" bg={sidebarBg}>
             <IconButton
-              icon={<FiMenu />}
+              icon={<FaUsers />}
               variant="ghost"
-              display={{ base: "flex", md: "none" }}
+              display={{ base: "flex", lg: "none" }}
               onClick={onOpen}
               mr={2}
               aria-label="Menu"

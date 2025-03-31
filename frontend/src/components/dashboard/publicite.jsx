@@ -28,40 +28,72 @@ import {
   InputGroup,
   InputLeftElement,
   Tabs,
-  TabList,
   Tab,
-  Image,
+  TabList,
   useToast,
   Badge,
   useColorModeValue,
   HStack,
   IconButton,
+  Radio,
+  RadioGroup,
+  Stack,
 } from "@chakra-ui/react"
 import axiosInstance from "@/api/axios"
 import { v4 as uuidv4 } from "uuid"
-import { FiCheck, FiX } from "react-icons/fi"
+import { FiCheck, FiX, FiDollarSign } from "react-icons/fi"
 import { useAuth } from "@/hooks/useAuth"
+import { baseUrl, baseUrlFrontend } from "@/config"
 
 export default function GestionnaireCampagnes({ isModerateur }) {
   const [campagnes, setCampagnes] = useState([])
   const [annonces, setAnnonces] = useState([])
   const [publiciteSelectionnee, setPubliciteSelectionnee] = useState("")
-  const [montant, setMontant] = useState("")
   const [titre, setTitre] = useState("")
+  const [duree, setDuree] = useState("3")
   const { isOpen, onOpen, onClose } = useDisclosure()
   const toast = useToast()
   const { user } = useAuth()
+
+  // Options de durée et prix
+  const dureeOptions = [
+    { value: "3", label: "3 jours", prix: 250 },
+    { value: "7", label: "1 semaine", prix: 500 },
+    { value: "14", label: "2 semaines", prix: 1000 },
+    { value: "30", label: "1 mois", prix: 2000 },
+  ]
+
   // Couleurs du thème
   const bgColor = useColorModeValue("neutral.50", "neutral.900")
-  const sidebarBg = useColorModeValue("white", "neutral.800")
-  const headerBg = useColorModeValue("white", "neutral.800")
-  const borderColor = useColorModeValue("neutral.200", "neutral.700")
   const textColor = useColorModeValue("neutral.800", "neutral.100")
-
 
   // États pour la recherche et le filtrage
   const [searchQuery, setSearchQuery] = useState("")
   const [filterStatus, setFilterStatus] = useState("all")
+
+  const statusPaiement=async(pub)=>{
+    try{
+      const response= await axiosInstance.post("/api/paiement/lygos/status/",{
+      order_id:pub.order_id
+      
+    })
+    const status=response.data.status
+    const responsePub=await axiosInstance.patch(`/api/publicites/${pub.id}/`,{
+      statut:status
+    })
+    console.log(responsePub);
+    
+    console.log(response);
+    }catch(err){
+        console.log("erreur de status",err);
+
+    }
+    
+    
+    
+    
+  }
+
 
   // Récupérer les annonces créées par l'utilisateur
   useEffect(() => {
@@ -91,6 +123,9 @@ export default function GestionnaireCampagnes({ isModerateur }) {
         const endpoint = isModerateur ? "/api/publicites/" : `/api/publicites/mes-publicites/`
         const response = await axiosInstance.get(endpoint)
         setCampagnes(response.data)
+        await response.data.map((pub)=> pub.order_id!=null && pub.is_payed==false && (statusPaiement(pub)))
+        console.log(response.data);
+        
       } catch (err) {
         toast({
           title: "Erreur",
@@ -106,24 +141,9 @@ export default function GestionnaireCampagnes({ isModerateur }) {
     fetchPublicites()
   }, [isModerateur, user])
 
-  // Créer une passerelle de paiement avec Lygos
-  const createPaymentGateway = async (montant, annonceId, titre) => {
-    try {
-      const response = await axiosInstance.post("/api/paiement/lygos/", {
-        amount: montant,
-        shop_name: "Bayis Immob",
-        message: "Paiement pour la publicité",
-        order_id: uuidv4(),
-      })
-      return response.data
-    } catch (err) {
-      throw new Error("Erreur lors de la création de la passerelle de paiement.")
-    }
-  }
-
-  // Créer une nouvelle publicité
+  // Créer une nouvelle publicité (sans paiement)
   const handleCreerCampagne = async () => {
-    if (!publiciteSelectionnee || !montant || !titre) {
+    if (!publiciteSelectionnee || !titre) {
       toast({
         title: "Erreur",
         description: "Veuillez remplir tous les champs.",
@@ -136,12 +156,112 @@ export default function GestionnaireCampagnes({ isModerateur }) {
     }
 
     try {
-      const paymentGateway = await createPaymentGateway(montant, publiciteSelectionnee, titre)
-      window.location.href = paymentGateway.link
+      const selectedOption = dureeOptions.find(opt => opt.value === duree)
+      const montant = selectedOption.prix
+      
+      const response = await axiosInstance.post("/api/publicites/", {
+        titre,
+        annonce: publiciteSelectionnee,
+        montant,
+        duree_jours: parseInt(duree),
+        user: user.id
+      })
+
+      setCampagnes([...campagnes, response.data])
+      onClose()
+      toast({
+        title: "Succès",
+        description: "Publicité créée avec succès. Veuillez effectuer le paiement pour l'activer.",
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+        position: "top",
+      })
+    } catch (err) {
+      console.log("Creation campagne", err);
+      toast({
+        title: "Erreur",
+        description: "Une erreur s'est produite lors de la création de la publicité.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+        position: "top",
+      })
+    }
+  }
+
+  // Payer une publicité
+  const handlePayerPublicite = async (publicite) => {
+    console.log("Dans la publicité");
+    const order_id=uuidv4()
+    const link=`${baseUrlFrontend}/merci`
+    try {
+      const response = await axiosInstance.post("/api/paiement/lygos/", {
+        amount:publicite.montant ,
+        shop_name: "Bayis Immob",
+        message: `Paiement pour la publicité: ${publicite.titre}`,
+        order_id: order_id,
+        publicite_id: publicite.id,
+        success_url:link,
+        failure_url:link
+      })
+     console.log(response);
+     
+      if (response.status === 200) {
+
+        const orderResponse= await axiosInstance.patch(`/api/publicites/${publicite.id}/`,{
+          order_id:order_id
+        })
+        if(orderResponse.status==200){
+          toast({
+          title: "Paiement initié",
+          description: "Redirection vers le paiement...",
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+          position: "top",
+        })
+        window.open(response.data.link, "_blank")
+        }
+
+        
+      }
+    } catch (err) {
+      console.log(err);
+      toast({
+        title: "Erreur",
+        description: "Une erreur s'est produite lors du paiement.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+        position: "top",
+      })
+    }
+  }
+
+  // Valider une publicité (pour modérateurs)
+  const handleValiderPublicite = async (id) => {
+    try {
+      const response = await axiosInstance.patch(`/api/publicites/${id}/`, {
+        is_active: true
+      })
+      
+      setCampagnes(campagnes.map(campagne => 
+        campagne.id === id ? response.data : campagne
+      ))
+      
+      toast({
+        title: "Succès",
+        description: "Publicité validée avec succès.",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+        position: "top",
+      })
     } catch (err) {
       toast({
         title: "Erreur",
-        description: "Une erreur s'est produite lors de la création du paiement.",
+        description: "Impossible de valider la publicité.",
         status: "error",
         duration: 3000,
         isClosable: true,
@@ -175,31 +295,6 @@ export default function GestionnaireCampagnes({ isModerateur }) {
     }
   }
 
-  // Activer ou désactiver une publicité (pour modérateurs)
-  const handleToggleActive = async (id, isActive) => {
-    try {
-      const response = await axiosInstance.patch(`/api/publicites/${id}/`, { is_active: !isActive })
-      setCampagnes(campagnes.map((campagne) => (campagne.id === id ? response.data : campagne)))
-      toast({
-        title: "Succès",
-        description: `La publicité a été ${!isActive ? "activée" : "désactivée"} avec succès.`,
-        status: "success",
-        duration: 3000,
-        isClosable: true,
-        position: "top",
-      })
-    } catch (err) {
-      toast({
-        title: "Erreur",
-        description: `Une erreur est survenue lors de la ${!isActive ? "activation" : "désactivation"} de la publicité.`,
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-        position: "top",
-      })
-    }
-  }
-
   // Formater la date de création
   const formatDate = (dateString) => {
     const date = new Date(dateString)
@@ -210,7 +305,7 @@ export default function GestionnaireCampagnes({ isModerateur }) {
     })
   }
 
-  // Filtrer les publicités en fonction du statut et de la recherche
+  // Filtrer les publicités
   const filteredCampagnes = campagnes
     .filter((campagne) => {
       if (filterStatus === "all") return true
@@ -228,27 +323,22 @@ export default function GestionnaireCampagnes({ isModerateur }) {
             {isModerateur ? "Gestion des Publicités" : "Mes Campagnes Publicitaires"}
           </Heading>
           {!isModerateur && (
-            <Button colorScheme="blue" onClick={onOpen}>
-              + Créer une publicité
+            <Button colorScheme="blue" onClick={onOpen} leftIcon={<FiDollarSign />}>
+              Créer une publicité
             </Button>
           )}
         </Flex>
 
         <Box mb={6}>
-          <Flex mb={4}>
-            <InputGroup>
-              <InputLeftElement pointerEvents="none">
-                {/* <SearchIcon color="gray.300" /> */}
-              </InputLeftElement>
-              <Input
-                placeholder="Rechercher une campagne..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </InputGroup>
-          </Flex>
+          <InputGroup mb={4}>
+            <Input
+              placeholder="Rechercher une campagne..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </InputGroup>
 
-          <Tabs colorScheme="blue" mb={4} onChange={(index) => {
+          <Tabs colorScheme="blue" onChange={(index) => {
             const statusMap = ["all", "active", "inactive"]
             setFilterStatus(statusMap[index])
           }}>
@@ -267,8 +357,9 @@ export default function GestionnaireCampagnes({ isModerateur }) {
                 <Th>TITRE</Th>
                 <Th>ANNONCE</Th>
                 <Th>MONTANT</Th>
-                <Th>DATE DE CRÉATION</Th>
+                <Th>DUREE</Th>
                 <Th>STATUT</Th>
+                <Th>PAIEMENT</Th>
                 <Th>ACTIONS</Th>
               </Tr>
             </Thead>
@@ -276,33 +367,42 @@ export default function GestionnaireCampagnes({ isModerateur }) {
               {filteredCampagnes.map((campagne) => (
                 <Tr key={campagne.id}>
                   <Td>{campagne.titre}</Td>
-                  <Td>{campagne.annonce.titre}</Td>
+                  <Td>{campagne.annonce?.titre || "Annonce supprimée"}</Td>
                   <Td color="blue.500" fontWeight="medium">
                     {campagne.montant} Fcfa
                   </Td>
-                  <Td>{formatDate(campagne.date_creation)}</Td>
+                  <Td>{campagne.duree_jours} jours</Td>
                   <Td>
                     <Badge colorScheme={campagne.is_active ? "green" : "red"}>
                       {campagne.is_active ? "Active" : "Inactive"}
                     </Badge>
                   </Td>
+
+                  <Td>
+                    <Badge colorScheme={campagne.statut=="success" ? "green" :campagne.statut=="failed" ? "red":"yellow"}>
+                      {campagne.statut=="failed"?"Echec":campagne.statut }
+                    </Badge>
+                  </Td>
+
                   <Td>
                     <HStack spacing={2}>
-                      {isModerateur && (
-                        <>
-                          <IconButton
-                            icon={<FiCheck />}
-                            aria-label="Activer"
-                            colorScheme={campagne.is_active ? "gray" : "green"}
-                            onClick={() => handleToggleActive(campagne.id, campagne.is_active)}
-                          />
-                          <IconButton
-                            icon={<FiX />}
-                            aria-label="Désactiver"
-                            colorScheme={campagne.is_active ? "red" : "gray"}
-                            onClick={() => handleToggleActive(campagne.id, campagne.is_active)}
-                          />
-                        </>
+                      {!campagne.is_active && !isModerateur && (
+                        <Button
+                          colorScheme="green"
+                          size="sm"
+                          onClick={() => handlePayerPublicite(campagne)}
+                        >
+                          Payer
+                        </Button>
+                      )}
+                      {isModerateur && !campagne.is_active && (
+                        <Button
+                          colorScheme="green"
+                          size="sm"
+                          onClick={() => handleValiderPublicite(campagne.id)}
+                        >
+                          Valider
+                        </Button>
                       )}
                       <Button
                         colorScheme="red"
@@ -321,7 +421,7 @@ export default function GestionnaireCampagnes({ isModerateur }) {
 
         {/* Modal pour créer une nouvelle publicité */}
         {!isModerateur && (
-          <Modal isOpen={isOpen} onClose={onClose}>
+          <Modal isOpen={isOpen} onClose={onClose} size="lg">
             <ModalOverlay />
             <ModalContent>
               <ModalHeader>Créer une nouvelle publicité</ModalHeader>
@@ -344,7 +444,7 @@ export default function GestionnaireCampagnes({ isModerateur }) {
                     onChange={(e) => setPubliciteSelectionnee(e.target.value)}
                   >
                     {annonces.map((annonce) => (
-                      <option key={annonce.id} value={annonce.id.toString()}>
+                      <option key={annonce.id} value={annonce.id}>
                         {annonce.titre}
                       </option>
                     ))}
@@ -352,19 +452,22 @@ export default function GestionnaireCampagnes({ isModerateur }) {
                 </FormControl>
 
                 <FormControl mb={4}>
-                  <FormLabel>Montant (en Fcfa)</FormLabel>
-                  <Input
-                    type="number"
-                    value={montant}
-                    onChange={(e) => setMontant(e.target.value)}
-                    placeholder="Entrer le montant"
-                  />
+                  <FormLabel>Durée de la publicité</FormLabel>
+                  <RadioGroup onChange={setDuree} value={duree}>
+                    <Stack direction="column">
+                      {dureeOptions.map((option) => (
+                        <Radio key={option.value} value={option.value}>
+                          {option.label} - {option.prix} Fcfa
+                        </Radio>
+                      ))}
+                    </Stack>
+                  </RadioGroup>
                 </FormControl>
               </ModalBody>
 
               <ModalFooter>
                 <Button colorScheme="blue" mr={3} onClick={handleCreerCampagne}>
-                  Payer et créer
+                  Créer la publicité
                 </Button>
                 <Button onClick={onClose}>Annuler</Button>
               </ModalFooter>

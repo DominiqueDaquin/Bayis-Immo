@@ -25,7 +25,7 @@ import {
 } from 'react-icons/fa'
 import { BsShieldLock } from 'react-icons/bs'
 import { RiCopyrightLine } from 'react-icons/ri'
-
+import { useNavigate } from 'react-router-dom'
 const Footer = () => {
   // Couleurs adaptatives
   const bgColor = useColorModeValue("white", "neutral.800");
@@ -36,7 +36,7 @@ const Footer = () => {
   const buttonHover = useColorModeValue("primary.600", "primary.500");
   const headingColor = useColorModeValue('blue.600', 'blue.300')
   const borderColor = useColorModeValue("neutral.200", "neutral.700")
-
+  const navigate=useNavigate()
   return (
     <Box
       bg={bgColor}
@@ -46,11 +46,11 @@ const Footer = () => {
       mt="auto"
     >
       <Container as={Stack} maxW={'7xl'} py={10} spacing={10}>
-        <SimpleGrid
+        {/* <SimpleGrid
           templateColumns={{ base: '1fr', md: '2fr 1fr 1fr 1fr' }}
           spacing={10}
         >
-          {/* Colonne 1 - Logo et description */}
+         
           <Stack spacing={6}>
             <Flex align="center">
               <Icon as={FaHome} boxSize={8}  mr={2} />
@@ -73,7 +73,6 @@ const Footer = () => {
             </Stack>
           </Stack>
 
-          {/* Colonne 2 - Types de biens */}
           <Stack align={'flex-start'}>
             <Heading as="h3" size="md" >
               Nos biens
@@ -97,7 +96,6 @@ const Footer = () => {
             </Stack>
           </Stack>
 
-          {/* Colonne 3 - Liens utiles */}
           <Stack align={'flex-start'}>
             <Heading as="h3" size="md" >
               Informations
@@ -109,7 +107,6 @@ const Footer = () => {
             <Link href={'#'}>Contactez-nous</Link>
           </Stack>
 
-          {/* Colonne 4 - Horaires et localisation */}
           <Stack>
             <Heading as="h3" size="md" >
               Nous trouver
@@ -128,13 +125,13 @@ const Footer = () => {
               </Flex>
             </Stack>
           </Stack>
-        </SimpleGrid>
+        </SimpleGrid> */}
 
         {/* Section juridique */}
         <Box
           pt={8}
-          borderTopWidth="1px"
-          borderTopColor={borderColor}
+          // borderTopWidth="1px"
+          // borderTopColor={borderColor}
         >
           <SimpleGrid
             templateColumns={{ base: '1fr', md: '1fr 1fr' }}
@@ -158,8 +155,8 @@ const Footer = () => {
                 align="center"
                 spacing={4}
               >
-                <Link href={'/conditions'} fontSize="sm">Conditions générales</Link>
-                <Link href={'/confidentialite'} fontSize="sm">Politique de confidentialité</Link>
+                <Link href={'/cgu'} fontSize="sm">Conditions générales</Link>
+                <Link href={'/privacy'} fontSize="sm">Politique de confidentialité</Link>
                 <Link href={'/cookies'} fontSize="sm">Préférences cookies</Link>
                 <Link href={'/mentions'} fontSize="sm">Mentions légales</Link>
               </Flex>

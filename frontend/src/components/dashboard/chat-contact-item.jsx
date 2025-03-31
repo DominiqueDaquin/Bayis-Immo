@@ -133,7 +133,7 @@ const ContactList = ({ setContact }) => {
   }
 
   return (
-    <VStack spacing={0} align="stretch">
+    <VStack spacing={0} align="stretch" minH="100vh">
       {discussions.map((discussion) => {
         const nom = discussion.createur1 === user.id ? discussion.name2 : discussion.name1;
         const destinataire = discussion.createur1 === user.id ? discussion.createur2 : discussion.createur1;

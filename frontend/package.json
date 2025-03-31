@@ -22,6 +22,7 @@
     "@tailwindcss/vite": "^4.0.14",
     "@types/gsap": "^1.20.2",
     "axios": "^1.8.3",
+    "chart.js": "^4.4.8",
     "formik": "^2.4.6",
     "framer-motion": "^12.5.0",
     "gsap": "^3.12.7",
@@ -30,6 +31,7 @@
     "react-dom": "^19.0.0",
     "react-icons": "^5.5.0",
     "react-router-dom": "^7.3.0",
+    "recharts": "^2.15.1",
     "tailwindcss": "^4.0.14",
     "uuid": "^11.1.0",
     "yup": "^1.6.1"

@@ -140,6 +140,8 @@ export default function Tombola({ isModerateur }) {
         isClosable: true,
       })
     } catch (error) {
+      console.log(error);
+      
       toast({
         title: "Erreur",
         description: "Une erreur est survenue lors de la création de la tombola.",
@@ -227,16 +229,19 @@ export default function Tombola({ isModerateur }) {
     .filter((t) => t.titre.toLowerCase().includes(searchQuery.toLowerCase()))
 
   return (
-    <Box bg={bgColor} minH="100vh" w="100%">
-      <Container maxW="7xl" py={8} px={{ base: 4, md: 8 }}>
+    <Box bg={bgColor} minH="100vh" >
+      <Container maxW="7xl" py={8} px={{ base: 0, md: 8 }}>
         <Box bg={sidebarBg} p={6} borderRadius="md" boxShadow="md">
           <Flex justify="space-between" align="center" mb={8}>
             <Heading size="lg">{isModerateur ? "Tombolas à valider" : "Mes Tombolas"}</Heading>
-            {!isModerateur && (
+            
               <Button leftIcon={<FiPlus />} colorScheme="blue" onClick={onCreateOpen}>
-                Créer une tombola
+              {
+                isMobile?("Créer"):("Créer une tombola")
+              }
+                
               </Button>
-            )}
+            
           </Flex>
 
           <Flex mb={6} gap={4}>
@@ -310,7 +315,9 @@ export default function Tombola({ isModerateur }) {
                 <Tbody>
                   {filteredTombolas.map((tombola) => (
                     <Tr key={tombola.id}>
-                      <Td>{tombola.titre}</Td>
+                      <Td>
+                        <Image src={tombola?.photo} boxSize="100px"></Image>
+                        {tombola.titre}</Td>
                       <Td>{tombola.cagnotte} Fcfa</Td>
                       <Td>
                         <Badge colorScheme={getStatusColor(tombola.statut)}>{getStatusText(tombola.statut)}</Badge>
@@ -383,7 +390,7 @@ export default function Tombola({ isModerateur }) {
               {selectedTombola && (
                 <VStack spacing={4} align="stretch">
                   <Image
-                    src={selectedTombola.image || "/placeholder.svg"}
+                    src={selectedTombola.photo || "/placeholder.svg"}
                     alt={selectedTombola.titre}
                     height="200px"
                     objectFit="cover"
@@ -403,7 +410,7 @@ export default function Tombola({ isModerateur }) {
           </ModalContent>
         </Modal>
 
-        {!isModerateur && (
+        
           <>
             <Modal isOpen={isCreateOpen} onClose={onCreateClose} size={modalSize}>
               <ModalOverlay />
@@ -428,7 +435,7 @@ export default function Tombola({ isModerateur }) {
               </ModalContent>
             </Modal>
           </>
-        )}
+       
 
         <AlertDialog isOpen={isDeleteOpen} leastDestructiveRef={cancelRef} onClose={onDeleteClose}>
           <AlertDialogOverlay>

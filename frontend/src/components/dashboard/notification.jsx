@@ -45,7 +45,7 @@ import {
   FiEyeOff,
 } from "react-icons/fi"
 import axiosInstance from "@/api/axios"
-
+import { useAuth } from "@/hooks/useAuth"
 // Composant pour une notification individuelle
 const NotificationCard = ({ notification, onMarkAsRead, onDelete, onArchive }) => {
   const { id, message, type, created_at, is_read, is_important } = notification
@@ -86,7 +86,7 @@ const NotificationCard = ({ notification, onMarkAsRead, onDelete, onArchive }) =
 
   return (
     <Card
-      bg={is_read ? bgColor : borderColor}
+      bg={is_read ? headerBg : borderColor}
       borderWidth="1px"
       borderColor={borderColor}
       transition="all 0.2s"
@@ -148,7 +148,7 @@ export default function Notifications() {
   const [filter, setFilter] = useState("all")
   const [searchQuery, setSearchQuery] = useState("")
   const toast = useToast()
-
+  const {isAuthenticated}=useAuth()
   // Définir le nombre de colonnes en fonction de la taille de l'écran
   const columns = useBreakpointValue({ base: 1, md: 2, lg: 3 })
   const bgColor = useColorModeValue("neutral.50", "neutral.900")
@@ -159,7 +159,8 @@ export default function Notifications() {
 
   useEffect(() => {
     const fetchNotifications = async () => {
-      try {
+      if(isAuthenticated){
+         try {
         const response = await axiosInstance.get("/api/notifications/mes-notifications")
         if (Array.isArray(response.data)) {
           setNotifications(response.data)
@@ -183,6 +184,19 @@ export default function Notifications() {
           position: "top",
         })
       }
+      }
+      else{
+        toast({
+          title: "Erreur",
+          description: "Vous devez vos autentifier avant de pouvoir accéder a vos notifications",
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+          position: "top",
+        })
+      }
+     
+    
     }
 
     fetchNotifications()
@@ -303,7 +317,7 @@ export default function Notifications() {
   }
 
   return (
-    <Box bg={bgColor} minH="100vh" w="100%">
+    <Box bg={headerBg} minH="100vh" w="100%">
       <Container maxW="7xl" py={8}>
         {/* En-tête */}
         <VStack spacing={6} align="stretch" mb={8}>
@@ -380,14 +394,14 @@ export default function Notifications() {
               <option value="important">Importantes</option>
               <option value="archived">Archivées</option>
             </Select>
-            <HStack spacing={2} justify={{ base: "flex-end", sm: "flex-start" }}>
+            {/* <HStack spacing={2} justify={{ base: "flex-end", sm: "flex-start" }}>
               <Tooltip label="Tout marquer comme lu">
                 <IconButton icon={<FiMail />} aria-label="Tout marquer comme lu" />
               </Tooltip>
               <Tooltip label="Archiver tout">
                 <IconButton icon={<FiArchive />} aria-label="Archiver tout" />
               </Tooltip>
-            </HStack>
+            </HStack> */}
           </Flex>
         </VStack>
 

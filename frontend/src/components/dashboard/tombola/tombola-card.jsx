@@ -14,14 +14,43 @@ import {
   CardBody,
 } from "@chakra-ui/react"
 import { FiEdit2, FiTrash2, FiEye } from "react-icons/fi"
+import { baseUrl } from "@/config"
+const getStatusColor = (status) => {
+  switch (status) {
+    case "a":
+      return "green"
+    case "p":
+      return "orange"
+    case "f":
+      return "blue"
+    case "r":
+      return "red"
+    default:
+      return "gray"
+  }
+}
 
+const getStatusText = (status) => {
+  switch (status) {
+    case "a":
+      return "Active"
+    case "p":
+      return "En attente"
+    case "f":
+      return "Terminée"
+    case "r":
+      return "Rejetée"
+    default:
+      return status
+  }
+}
 
 const TombolaCard = ({ tombola, onView, onEdit, onDelete }) => {
-    const { title, cagnotte, status, image, date_fin } = tombola 
+    const { title, cagnotte, status, photo, date_fin } = tombola 
   
     return (
       <Card mb={4} overflow="hidden" variant="outline">
-        <Image src={image || "/placeholder.svg"} alt={title} height="160px" objectFit="cover" />
+        <Image src={ `${baseUrl}${photo}` || "/placeholder.svg"} alt={title} height="160px" objectFit="cover" />
         <CardBody>
           <VStack align="start" spacing={2}>
             <Heading size="md">{title}</Heading>

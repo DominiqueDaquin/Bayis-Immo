@@ -11,23 +11,28 @@ import {
   Heading,
   Card,
   CardBody,
+  IconButton,
+
 } from "@chakra-ui/react"
 import {
   FiEdit2,
   FiTrash2,
   FiEye,
+  FiCheck,
+  FiX
 } from "react-icons/fi"
+import { baseUrl } from "@/config"
 
-const PropertyCard = ({ property, onView, onEdit, onDelete }) => {
-    const { title, description, price, status, publishedAt, images } = property
+const PropertyCard = ({ property, onView, onEdit, onDelete,isModerateur,handleStatusChange,handleViewProperty }) => {
+    const { title, description, prix, status, creer_le, photos } = property
   
     const getStatusColor = (status) => {
       switch (status) {
-        case "active":
+        case "a":
           return "green"
-        case "pending":
+        case "p":
           return "orange"
-        case "sold":
+        case "r":
           return "red"
         default:
           return "gray"
@@ -36,12 +41,12 @@ const PropertyCard = ({ property, onView, onEdit, onDelete }) => {
   
     const getStatusText = (status) => {
       switch (status) {
-        case "active":
-          return "Actif"
-        case "pending":
+        case "a":
+          return "Approuvé"
+        case "p":
           return "En attente"
-        case "sold":
-          return "Vendu"
+        case "r":
+          return "Rejetté"
         default:
           return status
       }
@@ -49,21 +54,47 @@ const PropertyCard = ({ property, onView, onEdit, onDelete }) => {
   
     return (
       <Card mb={4} overflow="hidden" variant="outline">
-        <Image src={images || "/placeholder.svg"} alt={title} height="200px" objectFit="cover" />
+        <Image src={ `${baseUrl}${property.photos[0]?.photo}`  || "/placeholder.svg"} alt={title} height="200px" objectFit="cover" />
         <CardBody>
           <VStack align="start" spacing={2}>
             <Heading size="md">{title}</Heading>
             <Text color="blue.600" fontWeight="bold">
-              {price}
+              {prix}
             </Text>
             <Badge colorScheme={getStatusColor(status)}>{getStatusText(status)}</Badge>
             <Text noOfLines={2} fontSize="sm" color="gray.600">
               {description}
             </Text>
+        
             <Text fontSize="xs" color="gray.500">
-              Publié le {new Date(publishedAt).toLocaleDateString()}
+              Publié le {new Date(creer_le).toLocaleDateString()}
             </Text>
-            <HStack spacing={2} pt={2}>
+  {
+            isModerateur ? (<>
+            
+                                  <HStack>
+                                    <IconButton 
+                                    icon={<FiEye />}
+                                    aria-label="voir"
+                                    colorScheme="green"
+                                    onClick={()=>handleViewProperty(property)}
+                                    />
+                                    <IconButton
+                                      icon={<FiCheck />}
+                                      aria-label="Valider"
+                                      colorScheme="green"
+                                      onClick={() => handleStatusChange(property.id, "a")}
+            
+                                    />
+                                    <IconButton
+                                      icon={<FiX />}
+                                      aria-label="Rejeter"
+                                      colorScheme="red"
+                                      onClick={() => handleStatusChange(property.id, "r")}
+            
+                                    />
+                                  </HStack>
+            </>):(            <HStack spacing={2} pt={2}>
               <Button size="sm" leftIcon={<FiEye />} onClick={() => onView(property)}>
                 Voir
               </Button>
@@ -73,7 +104,9 @@ const PropertyCard = ({ property, onView, onEdit, onDelete }) => {
               <Button size="sm" colorScheme="red" leftIcon={<FiTrash2 />} onClick={() => onDelete(property)}>
                 Supprimer
               </Button>
-            </HStack>
+            </HStack>)
+          }
+
           </VStack>
         </CardBody>
       </Card>
