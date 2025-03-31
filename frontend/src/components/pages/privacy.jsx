@@ -6,7 +6,7 @@ const PrivacyPolicy = () => {
 <div>
 <SimpleNavbar/>
 <Container maxW="4xl" py={10}>
-      <Box boxShadow="lg" borderRadius="xl" p={6} bg="white">
+      <Box boxShadow="lg" borderRadius="xl" p={6} >
         <Box>
           <VStack spacing={4} align="start">
             <Heading size="xl" textAlign="center" w="full">
