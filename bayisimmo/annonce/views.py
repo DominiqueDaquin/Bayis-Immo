@@ -18,8 +18,12 @@ from authentification.permissions import IsAnnonceur,IsAnnonceurOrReadOnly
 from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils import timezone
-
-
+from django.db.models import Case, When, IntegerField
+from django.contrib.auth.models import AnonymousUser
+from django.db.models import Count
+from django.db.models.functions import TruncDate
+from django.core.mail import send_mail
+from django.conf import settings
 from .models import (
     Annonce,
     Message,
@@ -47,9 +51,10 @@ from .serializers import (
     CommentaireSerializer,
     VueSerializer,
     PubliciteSerializer,
-    UserTombolaSerializer
+    UserTombolaSerializer,
+    ParticipationSerializer
                           )
-
+User=get_user_model()
 class AnnonceView(viewsets.ModelViewSet):
 
     """ 
@@ -90,6 +95,12 @@ class AnnonceView(viewsets.ModelViewSet):
         Récupère la note moyenne d'un article ainsi que la note donnée par l'utilisateur
         """
         user = request.user
+        if user is None or isinstance(user, AnonymousUser) or not user.is_authenticated:
+            return Response({
+            "user_note": 0,
+            "note": 0,
+            "avis": 0
+        })
         annonce = get_object_or_404(Annonce, pk=pk) 
         valeur=0
         moyenne=0
@@ -117,6 +128,10 @@ class AnnonceView(viewsets.ModelViewSet):
         Diq si une annonce est dans les favoris de l'utilisateur
         """
         user=request.user
+        
+        if user is None or isinstance(user, AnonymousUser) or not user.is_authenticated:
+            return Response({"is_favoris": False})
+        
         try:
               is_favoris=False
               try:
@@ -136,10 +151,24 @@ class AnnonceView(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user=self.request.user
-        if user.groups.filter(name="annonceur").exists():
-            return Annonce.objects.all()
+      
+        if user.groups.filter(name="moderateur").exists():
+            return Annonce.objects.annotate(
+                priority=Case(
+                    When(status='p',then=0),
+                    When(status='s',then=1),
+                    default=2,
+                    output_field=IntegerField()
+                )
+            ).order_by("priority","-creer_le")
         else:
-            return Annonce.objects.exclude(status='d')
+            return Annonce.objects.annotate(
+                priority=Case(
+                    When(status='s',then=0),
+                    When(status='a',then=1),
+                    default=2,
+                    output_field=IntegerField()
+                )).order_by("priority","-creer_le")
 
     def perform_create(self, serializer):
             serializer.save(creer_par=self.request.user)
@@ -200,8 +229,6 @@ class MessageView(viewsets.ModelViewSet):
             
             serializer = self.get_serializer(messages, many=True)
             return Response(serializer.data)
-
-
 
 class DiscussionView(viewsets.ModelViewSet):
     queryset = Discussion.objects.all()
@@ -297,14 +324,60 @@ class AnnonceFavorisView(viewsets.ModelViewSet):
             return AnnonceFavoris.objects.filter(user=user)
 
 class TombolaView(viewsets.ModelViewSet):
-    queryset = Tombola.objects.all()
+    queryset = Tombola.objects.filter(statut='a')
     serializer_class = TombolaSerializer
     permission_classes=[IsAnnonceurOrReadOnly]
+
+    def get_queryset(self):
+        user=self.request.user
+        
+        if user.groups.filter(name="moderateur").exists():
+            return Tombola.objects.annotate(
+                statut_priority=Case(
+                    When(statut='p', then=0),  
+                    default=1,
+                    output_field=IntegerField(),
+                )
+).order_by('statut_priority','-creer_le')
+        else:
+            return Tombola.objects.filter(statut='a').order_by('-creer_le')
+
+    @action(detail=True, methods=['post'], url_path='paiement/(?P<order_id>[^/.]+)')
+    def enregistrer_paiement(self, request, pk=None, order_id=None):
+        user=request.user
+        try:
+            tombola=Tombola.objects.get(id=pk)
+            user_tombola=UserTombola.objects.create(user=user,tombola=tombola)
+            
+            if user_tombola.user != request.user:
+                return Response(
+                    {"detail": "Vous n'avez pas la permission d'effectuer cette action."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            user_tombola.order_id = order_id
+            user_tombola.is_payed = True
+            user_tombola.is_active = True  
+            user_tombola.save()
+            serializer = self.get_serializer(user_tombola)
+            return Response(serializer.data)
+            
+        except Publicite.DoesNotExist:
+            return Response(
+                {"detail": "Tombola non trouvée."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
 
     @action(detail=False,methods=['get'],permission_classes=[IsAnnonceur],url_path="mes-tombolas")
     def get_tombolas(self,request):
         user=request.user
-        tombolas=Tombola.objects.filter(creer_par=user)
+        tombolas=Tombola.objects.filter(creer_par=user).order_by("-creer_le")
         serializer=self.get_serializer(tombolas,many=True)
         return Response(serializer.data)
 
@@ -411,14 +484,14 @@ class VueCreateAPIView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]  
 
     def perform_create(self, serializer):
-        article_id = self.request.data.get('article')
-        article = Annonce.objects.filter(id=article_id).first()
+        annonce_id = self.request.data.get('annonce')
+        annonce = Annonce.objects.filter(id=annonce_id).first()
 
-        if not article:
-            raise NotFound("Article non trouvé") 
+        if not annonce:
+            raise NotFound("annonce non trouvé") 
 
         
-        serializer.save(user=self.request.user, article=article)
+        serializer.save(user=self.request.user, annonce=annonce)
 
 class PubliciteView(viewsets.ModelViewSet):
     queryset = Publicite.objects.all().order_by('-date_creation') 
@@ -432,6 +505,40 @@ class PubliciteView(viewsets.ModelViewSet):
         publicites=Publicite.objects.filter(user=user)
         serializer=self.get_serializer(publicites,many=True)
         return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='paiement/(?P<order_id>[^/.]+)')
+    def enregistrer_paiement(self, request, pk=None, order_id=None):
+        print("helllo")
+        try:
+            publicite = Publicite.objects.get(pk=pk)
+            print("hello2")
+            # Vérifier que la publicité appartient à l'utilisateur
+            if publicite.user != request.user:
+                return Response(
+                    {"detail": "Vous n'avez pas la permission d'effectuer cette action."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            print("passe 1 success")
+            # Mettre à jour la publicité
+            publicite.order_id = order_id
+            publicite.is_payed = True
+            publicite.is_active = True  
+            publicite.save()
+            print("passe 2 success")
+            serializer = self.get_serializer(publicite)
+            return Response(serializer.data)
+            
+        except Publicite.DoesNotExist:
+            return Response(
+                {"detail": "Publicité non trouvée."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
 
     def perform_create(self, serializer):
         """Assigner automatiquement l'utilisateur connecté lors de la création."""
@@ -453,7 +560,64 @@ class LygosPaymentView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
 
-class UnreadCountsAPIView(APIView):
+class LygosPaymentStatusView(APIView):
+    def post(self, request):
+        order_id = request.data.get("order_id")
+        if not order_id:
+            return Response({"error": "Order id requis"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        url = f"https://api.lygosapp.com/v1/gateway/payin/{order_id}"
+        headers = {
+            "api-key": settings.LYGOS_API_KEY,  
+            "Content-Type": "application/json",
+        }
+        
+        try:
+            response = requests.get(url, headers=headers)
+            return Response(response.json(), status=response.status_code)
+        
+        except requests.RequestException as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class UserTombalaView(viewsets.ModelViewSet):
+    queryset = UserTombola.objects.all()
+    serializer_class = UserTombolaSerializer
+    permission_classes = [IsAuthenticated]  
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_authenticated:
+            return UserTombola.objects.filter(user=user)
+        return UserTombola.objects.none() 
+        
+class UserParticipationsView(generics.ListAPIView):
+    serializer_class = ParticipationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return UserTombola.objects.filter(user=user).select_related('tombola')
+
+
+class SendMailView(APIView):
+    def post(self, request, *args, **kwargs):
+        objet=request.data.get("objet")
+        body=request.data.get("body")
+        email=request.data.get("email")
+        reponse=send_mail(
+            subject=objet,
+            message=body,
+            from_email=settings.EMAIL_HOST_USER,
+            recipient_list=[email]
+        )
+        if reponse:
+            return Response({"detail":"Email envoyé avec success"},status=status.HTTP_200_OK)
+        
+        return Response({"detail":"une erreur est survenue"},status=status.HTTP_400_BAD_REQUEST)
+
+
+class StatistiquesAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -462,7 +626,6 @@ class UnreadCountsAPIView(APIView):
         data = cache.get(cache_key)
         
         if data is None:
-            # Calculer les valeurs si pas en cache
             data = {
                 'unread_discussions': Discussion.objects.filter(
                     (Q(createur1=user) | Q(createur2=user)) &
@@ -470,10 +633,27 @@ class UnreadCountsAPIView(APIView):
                     Q(messages__status='e')
                 ).distinct().count(),
                 'unread_notifications': Notification.objects.filter(
-                    user=user,
+                    user=user.id,
                     is_read=False
-                ).count()
-            }
-            cache.set(cache_key, data, timeout=60)  # Cache pendant 60 secondes
+                ).count(),
+                'annonces_actives':Annonce.objects.filter(
+                    Q(creer_par=user.id) & Q(status='a')
+                ).count(),
+                'publicites_actives':Publicite.objects.filter(
+                    Q(user=user.id) & Q(is_active=True)
+                ).count(),
+                'annonces_vues': Vue.objects.filter(annonce__creer_par=user.id).count(),
+                'vues_par_annonces': Vue.objects.filter(
+                    annonce__creer_par=user.id
+                ).values('annonce__titre', 'annonce_id').annotate(
+                    nombre_vues=Count('id')
+                ),
+                'users_par_date': User.objects.annotate(
+    date_inscription=TruncDate('date_joined')
+).values('date_inscription').annotate(
+    nombre_utilisateurs=Count('id')
+).order_by('date_inscription')
+                            }
+            cache.set(cache_key, data, timeout=60)  
         
         return Response(data, status=status.HTTP_200_OK)

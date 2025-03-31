@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from authentification.serializers import UserSerializer
 from .models import Media,Annonce,Message,Discussion,AnnonceFavoris,Note,Tombola,Commentaire,Vue,Publicite,UserTombola
 from django.contrib.auth import get_user_model
 from .models import Notification
@@ -24,7 +25,6 @@ class MediaSerializer(serializers.ModelSerializer):
 
         return value
 
-    
 class AnnonceSerializer(serializers.ModelSerializer):
     creer_par = serializers.SlugRelatedField(
         read_only=True,
@@ -38,14 +38,20 @@ class AnnonceSerializer(serializers.ModelSerializer):
     )  
     avis=serializers.SerializerMethodField()
     moyenne=serializers.SerializerMethodField()
+    auteur_detail = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Annonce
         fields = [
             'id', 'titre', 'description', 'creer_le', 'creer_par', 'status',
-            'photos', 'photos_upload', 'localisation', 'prix', 'vues','avis','moyenne'
+            'photos', 'photos_upload', 'localisation', 'prix', 'vues','avis','moyenne','auteur_detail'
         ]
         read_only_fields = ['vues']
+
+
+    def get_auteur_detail(self, obj):
+        
+        return UserSerializer(obj.creer_par).data
 
     def create(self, validated_data):
         """ Création d'une annonce avec un tableau de photos """
@@ -107,10 +113,6 @@ class AnnonceSerializer(serializers.ModelSerializer):
         """Récupère la moyenne des notes depuis une instance de Note associée à l'annonce."""
         avis = Note.objects.filter(annonce=obj).count() 
         return avis or 0  
-
-    
-    # def get_mes_vues(self,obj):
-    #     return obj.nombre_vues
 
 class MessageSerializer(serializers.ModelSerializer):
 
@@ -174,30 +176,33 @@ class NoteSerializer(serializers.ModelSerializer):
     def get_moyenne(self,obj):
         return obj.moyenne
     
+class ParticipationSerializer(serializers.ModelSerializer):
+    tombola_id = serializers.PrimaryKeyRelatedField(source='tombola', read_only=True)
+    titre = serializers.CharField(source='tombola.titre', read_only=True)
+    date_fin = serializers.DateField(source='tombola.date_fin', read_only=True)
+    photo = serializers.ImageField(source='tombola.photo', read_only=True)
+    
+    class Meta:
+        model = UserTombola
+        fields = ['id', 'tombola_id', 'titre', 'date_fin', 'photo', 'date_participation', 'is_payed']
+
+class UserTombolaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=UserTombola
+        fields=['id','user','tombola','date_participation','is_payed','order_id','statut']
+
+
 class TombolaSerializer(serializers.ModelSerializer):
-    participants = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=User.objects.all(), required=False
-    )
+    participants = UserTombolaSerializer(source='usertombola_set', many=True, read_only=True)
     statut_display = serializers.CharField(source='get_statut_display', read_only=True)
 
     class Meta:
         model = Tombola
         fields = [
             'id', 'titre', 'cagnotte', 'participants_actuel', 'statut', 'statut_display', 
-            'date_fin', 'participants','photo','creer_par'
+            'date_fin', 'participants', 'photo', 'creer_par', 'description'
         ]
-        read_only_fields = ['participants_actuel','statut_display']
-
-class UserTombolaSerializer(serializers.ModelSerializer):
-    class Meta:
-        model=UserTombola
-        fields=['id','user','tombola','date_participation']
-
-class UserSerializer(serializers.ModelSerializer):
-    
-    class Meta:
-        model=UserTombola
-        fields=["user","tombola","date_participation"]
+        read_only_fields = ['participants_actuel', 'statut_display']
 
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -252,13 +257,14 @@ class PubliciteSerializer(serializers.ModelSerializer):
     nombre_de_jours = serializers.IntegerField(read_only=True)
     date_fin = serializers.DateTimeField(read_only=True) 
     date_creation = serializers.DateTimeField(read_only=True) 
-
     class Meta:
         model = Publicite
-        fields = ['id', 'user', 'titre', 'annonce', 'montant', 'is_active', 'date_creation', 'nombre_de_jours', 'date_fin']
+        fields = ['id', 'user', 'titre', 'annonce', 'montant', 'is_active', 'date_creation', 'nombre_de_jours', 'date_fin','order_id','is_payed','duree_jours','statut']
+
+    
     
     def validate_montant(self, value):
         """Validation du montant minimum"""
-        if value < 500:
-            raise serializers.ValidationError("Le montant minimum est de 500 FCFA.")
+        if value < 250:
+            raise serializers.ValidationError("Le montant minimum est de 250 FCFA.")
         return value

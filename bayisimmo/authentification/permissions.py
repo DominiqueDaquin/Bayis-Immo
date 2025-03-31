@@ -19,12 +19,16 @@ class IsAnnonceurOrReadOnly(BasePermission):
         if request.method in SAFE_METHODS:
             return True
         
-        return request.user and request.user.groups.filter(name='annonceur').exists()
+        return request.user and (request.user.groups.filter(name='annonceur').exists() or request.user.groups.filter(name='moderateur').exists())
 
     def has_object_permission(self, request, view, obj):
         
         if request.method in SAFE_METHODS:
             return True
-            
-        return obj.creer_par == request.user 
+        try:    
+            return (obj.creer_par == request.user ) or (request.user.groups.filter(name='moderateur').exists() )
+        except:
+            return (obj.user == request.user ) or (request.user.groups.filter(name='moderateur').exists() )
+        finally:
+            pass
          

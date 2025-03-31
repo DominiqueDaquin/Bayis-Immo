@@ -165,6 +165,9 @@ DJOSER={
         'user': 'authentification.serializers.UserSerializer',
         'user_update': 'authentification.serializers.UserUpdateSerializer',
     },
+    'PASSWORD_RESET_CONFIRM_URL': 'password/reset/confirm/{uid}/{token}',
+    'USERNAME_RESET_CONFIRM_URL': 'username/reset/confirm/{uid}/{token}',
+    'ACTIVATION_URL': 'activate/{uid}/{token}',
 }
 
 SIMPLE_JWT={
@@ -197,6 +200,18 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,  
 }
+
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'  
+EMAIL_PORT = 587  
+EMAIL_USE_TLS = True  
+EMAIL_HOST_USER = os.getenv('EMAIL')  
+EMAIL_HOST_PASSWORD = os.getenv('PASSWORD')  
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER  
+
+
 
 # LOGGING = {
 #     'version': 1,
