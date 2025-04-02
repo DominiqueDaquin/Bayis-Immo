@@ -202,18 +202,18 @@ class Publicite(models.Model):
         verbose_name_plural="Publicités"
     
 
-    @property
-    def nombre_de_jours(self):
-        montant_quotidien = 250
-        return max(int(self.montant // montant_quotidien), 2)
+    # @property
+    # def nombre_de_jours(self):
+    #     montant_quotidien = 250
+    #     return max(int(self.montant // montant_quotidien), 2)
 
     @property
     def date_fin(self):
         return self.date_creation + timedelta(days=int(self.nombre_de_jours))
 
     def clean(self):
-        if self.montant < 500:
-            raise ValidationError("Le montant minimum est de 500 FCFA.")
+        if self.montant < 250:
+            raise ValidationError("Le montant minimum est de 250 FCFA.")
 
     def save(self, *args, **kwargs):
         self.clean()

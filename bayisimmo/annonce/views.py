@@ -55,6 +55,23 @@ from .serializers import (
     ParticipationSerializer
                           )
 User=get_user_model()
+
+def send_mail_to_moderateur(subject,message):
+        moderateurs = User.objects.filter(groups__name='moderateur')
+
+        emails_moderateurs = [user.email for user in moderateurs if user.email]
+        
+        if emails_moderateurs:
+            
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=emails_moderateurs
+            )
+
+
+
 class AnnonceView(viewsets.ModelViewSet):
 
     """ 
@@ -172,6 +189,10 @@ class AnnonceView(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
             serializer.save(creer_par=self.request.user)
+            send_mail_to_moderateur(
+                subject= "Nouvelle annonce Crée",
+                message=f" Une nouvelle annonce à été crée par {self.request.user.name} et est en attente de validation"
+            )
 
 class MediaView(viewsets.ModelViewSet):
     queryset=Media.objects.all()
@@ -543,86 +564,31 @@ class PubliciteView(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Assigner automatiquement l'utilisateur connecté lors de la création."""
         serializer.save(user=self.request.user)
+        send_mail_to_moderateur(
+                subject= "Nouvelle Publicité crée",
+                message=f" Une nouvelle publicité à été crée par {self.request.user.name} et est en attente de validation"
+            )
+        
+        
 
-# class LygosPaymentView(APIView):
-#     def post(self, request):
-#         url = "https://api.lygosapp.com/v1/gateway"
-#         headers = {
-#             "api-key": settings.LYGOS_API_KEY,  
-#             "Content-Type": "application/json",
-#         }
-
-#         try:
-#             response = requests.post(url, json=request.data, headers=headers)
-#             return Response(response.json(), status=response.status_code)
-
-#         except Exception as e:
-#             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
+        
 
 class LygosPaymentView(APIView):
     def post(self, request):
         url = "https://api.lygosapp.com/v1/gateway"
         headers = {
-            "api-key": settings.LYGOS_API_KEY,
+            "api-key": settings.LYGOS_API_KEY,  
             "Content-Type": "application/json",
-            "User-Agent": "YourApp/1.0"
         }
 
-        # Configuration spéciale pour contourner le proxy
-        session = requests.Session()
-        
-        # 1. D'abord essayer sans proxy
-        session.trust_env = False  # Ignore les variables proxy système
-        
         try:
-            # Premier essai sans proxy
-            response = session.post(
-                url,
-                json=request.data,
-                headers=headers,
-                timeout=15,
-                verify=True
-            )
-            
-            # 2. Si échec, essayer avec le proxy officiel de PythonAnywhere
-            if response.status_code in [403, 502, 503]:
-                proxies = {
-                    'https': 'http://proxy.server:3128',
-                    'http': 'http://proxy.server:3128'
-                }
-                response = session.post(
-                    url,
-                    json=request.data,
-                    headers=headers,
-                    timeout=15,
-                    proxies=proxies,
-                    verify=True
-                )
-
-            response.raise_for_status()
+            response = requests.post(url, json=request.data, headers=headers)
             return Response(response.json(), status=response.status_code)
 
-        except requests.exceptions.SSLError as e:
-            return Response(
-                {"error": "Erreur SSL", "details": str(e)},
-                status=status.HTTP_502_BAD_GATEWAY
-            )
-        except requests.exceptions.ConnectionError as e:
-            return Response(
-                {
-                    "error": "Connexion refusée par le proxy",
-                    "solution": "Contactez le support PythonAnywhere pour autoriser api.lygosapp.com",
-                    "details": str(e)
-                },
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
-            )
         except Exception as e:
-            return Response(
-                {"error": "Erreur inattendue", "details": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )     
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 
 class LygosPaymentStatusView(APIView):
     def post(self, request):
@@ -713,11 +679,21 @@ class StatistiquesAPIView(APIView):
                     nombre_vues=Count('id')
                 ),
                 'users_par_date': User.objects.annotate(
-    date_inscription=TruncDate('date_joined')
-).values('date_inscription').annotate(
-    nombre_utilisateurs=Count('id')
-).order_by('date_inscription')
+                    date_inscription=TruncDate('date_joined')
+                ).values('date_inscription').annotate(
+                    nombre_utilisateurs=Count('id')
+                ).order_by('date_inscription'),
+                            'favoris_par_annonce':AnnonceFavoris.objects.filter(
+                    annonce__creer_par=user.id
+                ).values('annonce__titre', 'annonce_id').annotate(
+                    nombre_vues=Count('id')
+                ),
+                'total_vues':Vue.objects.filter(annonce__creer_par=user.id).count(),
+                'total_discussions':Discussion.objects.filter(createur2=user).count()
+                            
+                            
                             }
+                            
             cache.set(cache_key, data, timeout=60)  
         
         return Response(data, status=status.HTTP_200_OK)

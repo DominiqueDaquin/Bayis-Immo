@@ -254,12 +254,12 @@ class VueSerializer(serializers.ModelSerializer):
 
 
 class PubliciteSerializer(serializers.ModelSerializer):
-    nombre_de_jours = serializers.IntegerField(read_only=True)
+    # nombre_de_jours = serializers.IntegerField(read_only=True)
     date_fin = serializers.DateTimeField(read_only=True) 
     date_creation = serializers.DateTimeField(read_only=True) 
     class Meta:
         model = Publicite
-        fields = ['id', 'user', 'titre', 'annonce', 'montant', 'is_active', 'date_creation', 'nombre_de_jours', 'date_fin','order_id','is_payed','duree_jours','statut']
+        fields = ['id', 'user', 'titre', 'annonce', 'montant', 'is_active', 'date_creation', 'date_fin','order_id','is_payed','duree_jours','statut']
 
     
     

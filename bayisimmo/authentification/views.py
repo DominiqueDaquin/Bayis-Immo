@@ -6,6 +6,8 @@ from rest_framework.views import APIView,status
 from django.contrib.auth.models import Group
 from rest_framework.decorators import api_view,permission_classes
 from rest_framework.permissions import AllowAny
+from .serializers import GroupSerializer
+from rest_framework.viewsets import ModelViewSet
 User=get_user_model()
 class AddToGroupView(APIView):
     
@@ -59,3 +61,9 @@ def custom_password_reset(request):
             {"detail": str(e)},
             status=status.HTTP_400_BAD_REQUEST
         )
+
+
+class GroupView(ModelViewSet):
+
+    queryset=Group.objects.all()
+    serializer_class=GroupSerializer

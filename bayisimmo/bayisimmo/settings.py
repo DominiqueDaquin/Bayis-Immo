@@ -55,6 +55,11 @@ INSTALLED_APPS = [
     #installed app
     'authentification',
     'annonce',
+
+    #pour s3
+    #"storages"
+
+
 ]
 
 MIDDLEWARE = [
@@ -168,6 +173,10 @@ DJOSER={
     'PASSWORD_RESET_CONFIRM_URL': 'password/reset/confirm/{uid}/{token}',
     'USERNAME_RESET_CONFIRM_URL': 'username/reset/confirm/{uid}/{token}',
     'ACTIVATION_URL': 'activate/{uid}/{token}',
+    'PERMISSIONS': {
+        'user_list': ['rest_framework.permissions.AllowAny'],  # Modifier si nécessaire
+        'user': ['rest_framework.permissions.IsAuthenticated'],
+    }
 }
 
 SIMPLE_JWT={
@@ -211,7 +220,14 @@ EMAIL_HOST_USER = os.getenv('EMAIL')
 EMAIL_HOST_PASSWORD = os.getenv('PASSWORD')  
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER  
 
-
+if DEBUG==False:
+    AWS_ACCESS_KEY_ID = 'votre-access-key'
+    AWS_SECRET_ACCESS_KEY = 'votre-secret-key'
+    AWS_STORAGE_BUCKET_NAME = 'nom-de-votre-bucket'
+    AWS_S3_REGION_NAME = 'us-east-2'  # Région de votre bucket
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_DEFAULT_ACL = None
+    AWS_S3_VERIFY = True
 
 # LOGGING = {
 #     'version': 1,

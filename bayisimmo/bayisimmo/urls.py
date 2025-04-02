@@ -20,17 +20,20 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from django.conf.urls.static import static
 from django.conf import settings
-from authentification.views import AddToGroupView,custom_password_reset
+from authentification.views import AddToGroupView,custom_password_reset,GroupView
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('auth/',include('djoser.urls')),
     path('auth/',include('djoser.urls.jwt')),
+    
     path('auth/add-to-group/',AddToGroupView.as_view()),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),  
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/',include('annonce.urls')),
+    path('api/',include('authentification.urls')),
     path('schema/', SpectacularAPIView.as_view(), name='schema'),
     path('auth/custom_password_reset/', custom_password_reset, name='custom-password-reset'),
+
     # Route pour visualiser la documentation dans Swagger
     path('swagger/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
 ]
