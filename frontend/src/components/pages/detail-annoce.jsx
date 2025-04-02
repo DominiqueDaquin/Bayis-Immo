@@ -211,14 +211,15 @@ export default function DetailAnnonce() {
           })
           navigate("/messages") // Rediriger vers la zone des messages
         } catch (err) {
-          toast({
-            title: "Erreur",
-            description: err.message,
-            status: "error",
-            duration: 3000,
-            isClosable: true,
-            position: "top",
-          })
+          navigate("/messages")
+          // toast({
+          //   title: "Erreur",
+          //   description: err.message,
+          //   status: "error",
+          //   duration: 3000,
+          //   isClosable: true,
+          //   position: "top",
+          // })
         }
       }
 

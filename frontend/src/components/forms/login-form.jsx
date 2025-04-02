@@ -313,6 +313,12 @@ export const LoginForm = () => {
                 >
                     Se connecter
                 </Button>
+                        <Text fontSize="sm" textAlign="center" mt={4}>
+                          Vous n'avez pas encore de compte?{" "}
+                          <Link color="blue.400" href="/signup">
+                            S'inscrire
+                          </Link>
+                        </Text>
             </BaseForm>
 
             {/* Modal pour demander l'email de réinitialisation */}

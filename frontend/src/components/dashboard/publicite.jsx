@@ -38,6 +38,7 @@ import {
   Radio,
   RadioGroup,
   Stack,
+  Link
 } from "@chakra-ui/react"
 import axiosInstance from "@/api/axios"
 import { v4 as uuidv4 } from "uuid"
@@ -355,7 +356,7 @@ export default function GestionnaireCampagnes({ isModerateur }) {
             <Thead>
               <Tr>
                 <Th>TITRE</Th>
-                <Th>ANNONCE</Th>
+                
                 <Th>MONTANT</Th>
                 <Th>DUREE</Th>
                 <Th>STATUT</Th>
@@ -366,8 +367,8 @@ export default function GestionnaireCampagnes({ isModerateur }) {
             <Tbody>
               {filteredCampagnes.map((campagne) => (
                 <Tr key={campagne.id}>
-                  <Td>{campagne.titre}</Td>
-                  <Td>{campagne.annonce?.titre || "Annonce supprimée"}</Td>
+                  <Td> <Link href={`/detail-annonce/${campagne.annonce}`} > {campagne.titre} </Link> </Td>
+                  
                   <Td color="blue.500" fontWeight="medium">
                     {campagne.montant} Fcfa
                   </Td>

@@ -22,7 +22,10 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       }
-    }
+    },
+    allowedHosts:[
+      "beb9-129-0-99-42.ngrok-free.app"
+    ]
   },
   preview: {
     proxy: {

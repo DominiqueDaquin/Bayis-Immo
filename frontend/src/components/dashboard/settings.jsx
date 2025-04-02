@@ -277,7 +277,7 @@ export default function Settings() {
                 }
               />
               
-              <SettingItem
+              {/* <SettingItem
                 label="Langue"
                 description="Sélectionnez votre langue préférée"
                 control={
@@ -292,7 +292,7 @@ export default function Settings() {
                     <option value="es">Español</option>
                   </Select>
                 }
-              />
+              /> */}
               
            
             </VStack>
@@ -314,13 +314,13 @@ export default function Settings() {
                 }
               />
               
-              <SettingItem
+              {/* <SettingItem
                 label="Authentification à deux facteurs"
                 description="Ajouter une couche de sécurité supplémentaire"
                 control={
                   <Switch size={["md", "lg"]} />
                 }
-              />
+              /> */}
               
               {/* <SettingItem
                 label="Sessions actives"

@@ -44,6 +44,7 @@ const HomeDashboard = () => {
   const usersChartRef = useRef(null);
   const viewsChartRef = useRef(null);
   const conversionChartRef = useRef(null);
+  const FavorisRef = useRef(null);
   
   const chartHeight = useBreakpointValue({ base: "250px", md: "300px" });
   const gridColumns = useBreakpointValue({ base: "1fr", lg: "2fr 1fr" });
@@ -72,6 +73,8 @@ const HomeDashboard = () => {
           nouveaux_utilisateurs: 24, // Nouveaux utilisateurs
           annonces_expirantes: 3, // Annonces qui expirent bientôt
         };
+        console.log(response.data);
+        
         setStats(enhancedData);
       } catch (error) {
         toast({
@@ -101,6 +104,9 @@ const HomeDashboard = () => {
     }
     if (conversionChartRef.current) {
       conversionChartRef.current.destroy();
+    }
+    if(FavorisRef.current){
+    FavorisRef.current.destroy()
     }
 
     // Créer le graphique d'inscriptions
@@ -177,6 +183,46 @@ const HomeDashboard = () => {
       });
     }
 
+    const FavoriCtx=document.getElementById('FavorisChart')
+    if (FavoriCtx) {
+      const topAnnonces = [...stats.favoris_par_annonce]
+        .sort((a, b) => b.nombre_vues - a.nombre_vues)
+        .slice(0, 5);
+
+      FavorisRef.current = new Chart(FavoriCtx, {
+        type: 'bar',
+        data: {
+          labels: topAnnonces.map(annonce => 
+            annonce.annonce__titre.length > 15 
+              ? annonce.annonce__titre.substring(0, 15) + '...' 
+              : annonce.annonce__titre
+          ),
+          datasets: [{
+            label: 'Favoris',
+            data: topAnnonces.map(annonce => annonce.nombre_vues),
+            backgroundColor: COLORS,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const annonce = topAnnonces[context.dataIndex];
+                  return `${annonce.annonce__titre}: ${context.raw} vues`;
+                }
+              }
+            }
+          },
+        }
+      });
+    }
+
     // Graphique de conversion (exemple supplémentaire)
     const conversionCtx = document.getElementById('conversionChart');
     if (conversionCtx) {
@@ -185,7 +231,7 @@ const HomeDashboard = () => {
         data: {
           labels: ['Converties', 'Non converties'],
           datasets: [{
-            data: [stats.taux_conversion, 100 - stats.taux_conversion],
+            data: [stats.total_discussions, stats.total_vues - stats.total_discussions],
             backgroundColor: ['#00C49F', '#FF8042'],
           }]
         },
@@ -211,6 +257,9 @@ const HomeDashboard = () => {
       }
       if (conversionChartRef.current) {
         conversionChartRef.current.destroy();
+      }
+            if (FavorisRef.current) {
+        FavorisRef.current.destroy();
       }
     };
   }, [stats]);
@@ -251,7 +300,7 @@ const HomeDashboard = () => {
     },
     {
       label: "Taux de conversion",
-      value: `${stats.taux_conversion}%`,
+      value: `${((stats.total_discussions/stats.total_vues)*100 || 0).toFixed(2)}%`,
       icon: FiBarChart,
       color: "purple.400",
     },
@@ -327,6 +376,18 @@ const HomeDashboard = () => {
               <canvas id="viewsChart"></canvas>
             </CardBody>
           </Card>
+
+                    <Card mb={8} boxShadow="lg">
+            <CardHeader>
+              <Heading size="md">Top Favoris</Heading>
+              <Text fontSize="sm" color="gray.500">
+                Annonces les plus aimées
+              </Text>
+            </CardHeader>
+            <CardBody height={chartHeight}>
+              <canvas id="FavorisChart"></canvas>
+            </CardBody>
+          </Card>
         </GridItem>
 
         {/* Right Column */}
@@ -386,7 +447,7 @@ const HomeDashboard = () => {
             </CardBody>
           </Card>
 
-          <Card boxShadow="lg">
+          {/* <Card boxShadow="lg">
             <CardHeader>
               <Heading size="md">Actions Rapides</Heading>
             </CardHeader>
@@ -418,7 +479,7 @@ const HomeDashboard = () => {
                 </Button>
               </SimpleGrid>
             </CardBody>
-          </Card>
+          </Card> */}
         </GridItem>
       </Grid>
     </Container>

@@ -22,9 +22,10 @@ function App() {
             <Router>
                 <Routes>
                     {/* Routes publiques */}
-                    <Route path="/" element={<SignupForm />} />
+                    <Route path="/signup" element={<SignupForm />} />
                     <Route path="/login" element={<LoginForm />} />
                     <Route path="/annonce" element={<Home />} />
+                    <Route path="/" element={<Home />} />
                     <Route path="/detail-annonce/:id" element={<DetailAnnonce />} />
                     <Route path="/favorites" element={<FavoritesPage />} />
                     <Route path="/tombolas" element={<TombolaListing />} />

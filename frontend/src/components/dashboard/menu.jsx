@@ -5,7 +5,7 @@ import Tombola from "../tombola/tombola"
 import Notifications from "../notification"
 import GestionnaireCampagnes from "../publicite"
 import ProfileSettings from "../settings"
-
+import UserManagementPage from "./utilisateurs"
 export const COMPONENTS = {
   dashboard: <HomeDashboard />,
   annonces: <Annonce isModerateur={true} />,
@@ -14,5 +14,6 @@ export const COMPONENTS = {
   notifications: <Notifications />,
   messages: <Chat />,
   statistiques: <Text>Statistiques</Text>,
-  settings: <ProfileSettings />
+  settings: <ProfileSettings />,
+  utilisateurs:<UserManagementPage/>,
 }

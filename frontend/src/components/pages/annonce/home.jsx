@@ -125,6 +125,7 @@ export default function Home() {
   };
 
   const fetchAnnonces = async () => {
+    
     try {
       const response = await axiosInstance.get("/api/annonces");
       setAnnonces(response.data);
@@ -401,6 +402,7 @@ export default function Home() {
                     isFavorite={favorites.includes(property.id)}
                     onToggleFavorite={handleToggleFavorite}
                     id={property.id}
+                    currentUser={user}
                   />
                 </GridItem>
               ))}

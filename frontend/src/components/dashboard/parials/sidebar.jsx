@@ -24,7 +24,8 @@ import {
   FiGift,
   FiMonitor,
   FiLogOut,
-  FiArrowLeft
+  FiArrowLeft,
+  FiUser
 } from "react-icons/fi"
 import { useEffect, useState } from "react"
 import axiosInstance from "@/api/axios"
@@ -103,7 +104,7 @@ const SidebarContent = ({ onClose = null, setActiveMenu, setActiveTab, component
   const navItems = [
     { label: "Tableau de bord", key: "dashboard", icon: FiHome },
     { label: "Annonces", key: "annonces", icon: FiCompass },
-    { label: "Tombola", key: "tombola", icon: FiGift },
+    { label: "Cagnotte", key: "tombola", icon: FiGift },
     { label: "Publicité", key: "publicite", icon: FiMonitor },
     { 
       label: "Notifications", 
@@ -117,6 +118,7 @@ const SidebarContent = ({ onClose = null, setActiveMenu, setActiveTab, component
       icon: FiMessageSquare, 
       badgeCount: loading ? 0 : counts.unread_discussions 
     },
+    { label: "Utilisateurs", key: "utilisateurs", icon: FiUser },
     { label: "Paramètres", key: "settings", icon: FiSettings },
   ]
 

@@ -27,7 +27,7 @@ import Notifications from "./notification"
 import GestionnaireCampagnes from "./publicite"
 import ProfileSettings from "./settings"
 import { useAuth } from "@/hooks/useAuth"
-
+import UserManagementPage from "./utilisateurs"
 
 
 
@@ -45,7 +45,8 @@ export default function Dashboard() {
     notifications: <Notifications />,
     messages: <Chat />,
     statistiques: <Text>Statistiques</Text>,
-    settings: <ProfileSettings />
+    settings: <ProfileSettings />,
+    utilisateurs:<UserManagementPage/>,
   }
   const { isOpen, onOpen, onClose } = useDisclosure()
   const [activeTab, setActiveTab] = useState(localStorage.getItem("activeTab") || "dashboard")

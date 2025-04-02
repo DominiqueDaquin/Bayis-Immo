@@ -23,6 +23,7 @@
     "@types/gsap": "^1.20.2",
     "axios": "^1.8.3",
     "chart.js": "^4.4.8",
+    "date-fns": "^4.1.0",
     "formik": "^2.4.6",
     "framer-motion": "^12.5.0",
     "gsap": "^3.12.7",
