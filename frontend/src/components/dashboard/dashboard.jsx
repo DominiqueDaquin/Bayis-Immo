@@ -12,14 +12,12 @@ import {
   DrawerContent,
   DrawerCloseButton,
   useDisclosure,
-  VStack,
 } from "@chakra-ui/react"
 import { FiMenu } from "react-icons/fi"
 import SimpleNavbar from "../partials/navbar"
 import HomeDashboard from "./home"
 import { useState, useEffect } from "react"
 import SidebarContent from "./parials/sidebar"
-import Footer from "../partials/footer"
 import Chat from "./chat"
 import Annonce from "./annonce"
 import Tombola from "./tombola/tombola"
@@ -31,7 +29,7 @@ import UserManagementPage from "./utilisateurs"
 
 
 
-const DashboardContent = () => <HomeDashboard />
+
 
 export default function Dashboard() {
   const { userGroups } = useAuth()
@@ -92,7 +90,7 @@ export default function Dashboard() {
               Menu
             </DrawerHeader>
             <DrawerBody p={0}>
-              <SidebarContent onClose={onClose} setActiveMenu={setActiveMenu} setActiveTab={setActiveTab} components={COMPONENTS} />
+              <SidebarContent onClose={onClose} setActiveMenu={setActiveMenu} setActiveTab={setActiveTab} components={COMPONENTS} isModerateur={isModerateur}/>
             </DrawerBody>
           </DrawerContent>
         </Drawer>

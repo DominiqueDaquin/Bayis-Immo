@@ -16,11 +16,13 @@ import TermsOfUse from './components/pages/cgu';
 import PrivacyPolicy from './components/pages/privacy';
 import PageRemerciementPaiement from './components/pages/remerciements';
 import Page404 from './components/pages/page404';
+import ErrorBoundary from './components/dashboard/error-boundary';
 function App() {
     return (
         <AuthProvider>
             <Router>
-                <Routes>
+                <ErrorBoundary>
+                    <Routes>
                     {/* Routes publiques */}
                     <Route path="/signup" element={<SignupForm />} />
                     <Route path="/login" element={<LoginForm />} />
@@ -52,7 +54,9 @@ function App() {
 
                     {/* Route 404 (optionnelle) */}
                     {/* <Route path="*" element={<NotFound />} /> */}
-                </Routes>
+                </Routes> 
+                </ErrorBoundary>
+               
             </Router>
         </AuthProvider>
     );

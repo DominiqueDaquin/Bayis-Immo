@@ -62,7 +62,7 @@ const NavItem = ({ icon, children, onClick, badgeCount, ...rest }) => {
   )
 }
 
-const SidebarContent = ({ onClose = null, setActiveMenu, setActiveTab, components }) => {
+const SidebarContent = ({ onClose = null, setActiveMenu, setActiveTab, components,IsModerateur }) => {
   const [counts, setCounts] = useState({ 
     unread_discussions: 0, 
     unread_notifications: 0 
@@ -118,9 +118,11 @@ const SidebarContent = ({ onClose = null, setActiveMenu, setActiveTab, component
       icon: FiMessageSquare, 
       badgeCount: loading ? 0 : counts.unread_discussions 
     },
-    { label: "Utilisateurs", key: "utilisateurs", icon: FiUser },
+    
     { label: "Paramètres", key: "settings", icon: FiSettings },
   ]
+  if (IsModerateur)
+    navItems=[...{ label: "Utilisateurs", key: "utilisateurs", icon: FiUser }]
 
   return (
     <Box
