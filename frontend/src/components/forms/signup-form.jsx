@@ -18,10 +18,15 @@ import {
   ModalFooter,
   useToast,
   Checkbox,
-  Flex
+  Flex,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  Progress
 } from "@chakra-ui/react";
 import { BaseForm } from "./base-form";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "@/api/axios";
 import { 
@@ -31,8 +36,26 @@ import {
   FiLock, 
   FiEye, 
   FiEyeOff,
-  FiCheck
+  FiCheck,
+  FiAlertCircle,
+  FiCheckCircle,
+  FiChevronDown
 } from "react-icons/fi";
+
+// Liste des indicatifs pays avec drapeaux
+const countryCodes = [
+  { code: "+237", name: "Cameroun", flag: "🇨🇲" },
+  { code: "+33", name: "France", flag: "🇫🇷" },
+  { code: "+1", name: "USA/Canada", flag: "🇺🇸" },
+  { code: "+229", name: "Bénin", flag: "🇧🇯" },
+  { code: "+226", name: "Burkina Faso", flag: "🇧🇫" },
+  { code: "+225", name: "Côte d'Ivoire", flag: "🇨🇮" },
+  { code: "+243", name: "RDC", flag: "🇨🇩" },
+  { code: "+242", name: "Congo", flag: "🇨🇬" },
+  { code: "+221", name: "Sénégal", flag: "🇸🇳" },
+  { code: "+228", name: "Togo", flag: "🇹🇬" },
+  { code: "+234", name: "Nigeria", flag: "🇳🇬" },
+];
 
 export const SignupForm = () => {
   const [name, setName] = useState("");
@@ -45,6 +68,18 @@ export const SignupForm = () => {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [verificationCode, setVerificationCode] = useState("");
   const [userEnteredCode, setUserEnteredCode] = useState("");
+  
+  // États pour la validation
+  const [nameValid, setNameValid] = useState(false);
+  const [nameTouched, setNameTouched] = useState(false);
+  const [emailValid, setEmailValid] = useState(false);
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [phoneValid, setPhoneValid] = useState(false);
+  const [phoneTouched, setPhoneTouched] = useState(false);
+  const [passwordValid, setPasswordValid] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState(0);
+  const [selectedCountry, setSelectedCountry] = useState(countryCodes[0]);
   
   const { 
     isOpen: isVerificationModalOpen, 
@@ -62,14 +97,87 @@ export const SignupForm = () => {
   const toast = useToast();
   const navigate = useNavigate();
 
+  // Vérification du nom
+  useEffect(() => {
+    const hasMinimumLetters = (name.match(/[a-zA-Z]/g) || []).length >= 3;
+    setNameValid(name.length >= 3 && hasMinimumLetters);
+  }, [name]);
+
+  // Vérification de l'email
+  useEffect(() => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    setEmailValid(emailRegex.test(email));
+  }, [email]);
+
+  // Vérification du téléphone
+  useEffect(() => {
+    const phoneRegex = /^\d{8,12}$/;
+    setPhoneValid(phoneRegex.test(phone));
+  }, [phone]);
+
+  // Vérification du mot de passe
+  useEffect(() => {
+    let strength = 0;
+    if (password.length >= 8) strength += 1;
+    if (/[A-Z]/.test(password)) strength += 1;
+    if (/[0-9]/.test(password)) strength += 1;
+    if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+    
+    setPasswordStrength(strength);
+    setPasswordValid(strength >= 3);
+  }, [password]);
+
   const generateVerificationCode = () => {
-    // Génère un code de 6 chiffres
     return Math.floor(100000 + Math.random() * 900000).toString();
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    if (!nameValid) {
+      toast({
+        title: "Nom invalide",
+        description: "Votre nom doit contenir au moins 3 caractères dont 3 lettres.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (!emailValid) {
+      toast({
+        title: "Email invalide",
+        description: "Veuillez entrer une adresse email valide.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (phone && !phoneValid) {
+      toast({
+        title: "Téléphone invalide",
+        description: "Veuillez entrer un numéro valide avec 8 à 12 chiffres.",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (!passwordValid) {
+      toast({
+        title: "Mot de passe faible",
+        description: "Votre mot de passe doit être plus robuste (minimum 8 caractères avec majuscules, chiffres et caractères spéciaux).",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      });
+      return;
+    }
+
     if (!acceptedTerms) {
       toast({
         title: "Erreur",
@@ -84,11 +192,11 @@ export const SignupForm = () => {
     setIsLoading(true);
 
     try {
-      // Générer et stocker le code de vérification
       const code = generateVerificationCode();
       setVerificationCode(code);
       
-      // Envoyer le code par email
+      const fullPhone = phone ? `${selectedCountry.code}${phone}` : null;
+      
       const emailResponse = await axiosInstance.post("/api/send-mail/", {
         email: email,
         objet: "Code de vérification",
@@ -109,7 +217,7 @@ export const SignupForm = () => {
       console.log(error);
       toast({
         title: "Erreur",
-        description: error.response?.data?.detail || "Une erreur s'est produite lors de l'envoi du code de vérification.",
+        description: error.response?.data?.detail || error.response?.data?.phone || "Une erreur s'est produite lors de l'envoi du code de vérification.",
         status: "error",
         duration: 5000,
         isClosable: true,
@@ -121,13 +229,14 @@ export const SignupForm = () => {
 
   const handleVerification = async () => {
     if (userEnteredCode === verificationCode) {
-      // Code correct, procéder à l'inscription
       setIsLoading(true);
       try {
+        const fullPhone = phone ? `${selectedCountry.code}${phone}` : null;
+        
         const response = await axiosInstance.post("/auth/users/", {
           email: email,
           name: name,
-          phone: phone,
+          phone: fullPhone,
           password: password,
           username: email,
         });
@@ -141,7 +250,7 @@ export const SignupForm = () => {
         console.log(error);
         toast({
           title: "Erreur lors de l'inscription.",
-          description: error.response?.data?.password || "Une erreur s'est produite.",
+          description: error.response?.data?.password || error.response?.data?.phone || "Une erreur s'est produite.",
           status: "error",
           duration: 5000,
           isClosable: true,
@@ -172,8 +281,8 @@ export const SignupForm = () => {
       toast({
         title: "Inscription réussie.",
         description: wantToBeAnnonceur 
-          ? "Vous êtes maintenant inscrit en tant qu'annonceur. Connectez vous maintenant!" 
-          : "Votre compte a été créé avec succès.Connectez vous maintenant!",
+          ? "Vous êtes maintenant inscrit en tant qu'annonceur. Connectez-vous maintenant!" 
+          : "Votre compte a été créé avec succès. Connectez-vous maintenant!",
         status: "success",
         duration: 5000,
         isClosable: true,
@@ -193,6 +302,38 @@ export const SignupForm = () => {
     }
   };
 
+  const handlePhoneChange = (e) => {
+    const value = e.target.value.replace(/\D/g, '');
+    setPhone(value);
+    setPhoneTouched(true);
+  };
+
+  const handleCountrySelect = (country) => {
+    setSelectedCountry(country);
+  };
+
+  const getPasswordStrengthColor = () => {
+    switch (passwordStrength) {
+      case 0: return 'red';
+      case 1: return 'red';
+      case 2: return 'yellow';
+      case 3: return 'green';
+      case 4: return 'green';
+      default: return 'gray';
+    }
+  };
+
+  const getPasswordStrengthLabel = () => {
+    switch (passwordStrength) {
+      case 0: return 'Très faible';
+      case 1: return 'Faible';
+      case 2: return 'Moyen';
+      case 3: return 'Fort';
+      case 4: return 'Très fort';
+      default: return '';
+    }
+  };
+
   return (
     <>
       <BaseForm
@@ -201,7 +342,7 @@ export const SignupForm = () => {
       >
         <Box mb={4}>
           <Text as="label" htmlFor="name" display="block" mb={2} fontSize="sm" fontWeight="medium">
-            Nom complet<sup >*</sup>
+            Nom complet<sup>*</sup>
           </Text>
           <InputGroup>
             <InputLeftElement pointerEvents="none">
@@ -213,16 +354,31 @@ export const SignupForm = () => {
               size="lg"
               borderRadius="md"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                setNameTouched(true);
+              }}
               required
               pl={10}
             />
           </InputGroup>
+          {nameTouched && !nameValid && (
+            <Text fontSize="sm" color="red.500" mt={1}>
+              <FiAlertCircle style={{ display: 'inline', marginRight: '4px' }} />
+              Le nom doit contenir au moins 3 caractères dont 3 lettres
+            </Text>
+          )}
+          {nameTouched && nameValid && (
+            <Text fontSize="sm" color="green.500" mt={1}>
+              <FiCheckCircle style={{ display: 'inline', marginRight: '4px' }} />
+              Nom valide
+            </Text>
+          )}
         </Box>
 
         <Box mb={4}>
           <Text as="label" htmlFor="email" display="block" mb={2} fontSize="sm" fontWeight="medium">
-            Adresse Email <sup >*</sup>
+            Adresse Email <sup>*</sup>
           </Text>
           <InputGroup>
             <InputLeftElement pointerEvents="none">
@@ -234,11 +390,26 @@ export const SignupForm = () => {
               size="lg"
               borderRadius="md"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setEmailTouched(true);
+              }}
               required
               pl={10}
             />
           </InputGroup>
+          {emailTouched && !emailValid && (
+            <Text fontSize="sm" color="red.500" mt={1}>
+              <FiAlertCircle style={{ display: 'inline', marginRight: '4px' }} />
+              Veuillez entrer une adresse email valide
+            </Text>
+          )}
+          {emailTouched && emailValid && (
+            <Text fontSize="sm" color="green.500" mt={1}>
+              <FiCheckCircle style={{ display: 'inline', marginRight: '4px' }} />
+              Email valide
+            </Text>
+          )}
         </Box>
 
         <Box mb={4}>
@@ -246,25 +417,58 @@ export const SignupForm = () => {
             Téléphone 
           </Text>
           <InputGroup>
-            <InputLeftElement pointerEvents="none">
-              <FiPhone color="gray.300" />
+            <InputLeftElement width="fit-content" pl={2}>
+              <Menu>
+                <MenuButton 
+                  as={Button} 
+                  rightIcon={<FiChevronDown />}
+                  variant="ghost" 
+                  size="sm"
+                  px={2}
+                >
+                  <Text fontSize="md">{selectedCountry.flag} {selectedCountry.code}</Text>
+                </MenuButton>
+                <MenuList maxH="300px" overflowY="auto">
+                  {countryCodes.map((country) => (
+                    <MenuItem 
+                      key={country.code}
+                      onClick={() => handleCountrySelect(country)}
+                    >
+                      <Text mr={2}>{country.flag}</Text>
+                      <Text>{country.name} ({country.code})</Text>
+                    </MenuItem>
+                  ))}
+                </MenuList>
+              </Menu>
             </InputLeftElement>
             <Input
               id="phone"
-              type="text"
+              type="tel"
               size="lg"
               borderRadius="md"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              required
-              pl={10}
+              onChange={handlePhoneChange}
+              pl="6rem"
+              placeholder="691008288"
             />
           </InputGroup>
+          {phoneTouched && phone && !phoneValid && (
+            <Text fontSize="sm" color="red.500" mt={1}>
+              <FiAlertCircle style={{ display: 'inline', marginRight: '4px' }} />
+              Le numéro doit contenir entre 8 et 12 chiffres
+            </Text>
+          )}
+          {phoneTouched && phoneValid && (
+            <Text fontSize="sm" color="green.500" mt={1}>
+              <FiCheckCircle style={{ display: 'inline', marginRight: '4px' }} />
+              Format valide: {selectedCountry.code} {phone}
+            </Text>
+          )}
         </Box>
 
         <Box mb={4}>
           <Text as="label" htmlFor="password" display="block" mb={2} fontSize="sm" fontWeight="medium">
-            Mot de passe <sup >*</sup>
+            Mot de passe <sup>*</sup>
           </Text>
           <InputGroup>
             <InputLeftElement pointerEvents="none">
@@ -276,7 +480,10 @@ export const SignupForm = () => {
               size="lg"
               borderRadius="md"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setPasswordTouched(true);
+              }}
               required
               pl={10}
             />
@@ -289,6 +496,22 @@ export const SignupForm = () => {
               />
             </InputRightElement>
           </InputGroup>
+          {passwordTouched && (
+            <Box mt={2}>
+              <Progress 
+                value={passwordStrength * 25} 
+                size="xs" 
+                colorScheme={getPasswordStrengthColor()}
+                mb={1}
+              />
+              <Text fontSize="sm" color={getPasswordStrengthColor()}>
+                Force du mot de passe: {getPasswordStrengthLabel()}
+              </Text>
+              <Text fontSize="xs" color="gray.500" mt={1}>
+                Le mot de passe doit contenir au moins 8 caractères, une majuscule, un chiffre et un caractère spécial.
+              </Text>
+            </Box>
+          )}
         </Box>
 
         <Flex mb={4} align="center">
@@ -311,9 +534,7 @@ export const SignupForm = () => {
           borderRadius="md"
           isLoading={isLoading}
           loadingText="Envoi du code..."
-          isDisabled={!acceptedTerms}
-          opacity={!acceptedTerms ? 0.7 : 1}
-          cursor={!acceptedTerms ? "not-allowed" : "pointer"}
+          isDisabled={!acceptedTerms || !nameValid || !emailValid || (phone && !phoneValid) || !passwordValid}
         >
           S'inscrire
         </Button>
