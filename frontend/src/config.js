@@ -1,3 +1,4 @@
-export const baseUrl="https://dakicodeur.pythonanywhere.com"
+export const baseUrl=import.meta.env.VITE_API_URL
 
-export const baseUrlFrontend= "https://bayisimmob.onrender.com"
+export const baseUrlFrontend= import.meta.env.VITE_FRONTEND_URL
+

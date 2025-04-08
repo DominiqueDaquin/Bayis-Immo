@@ -101,7 +101,7 @@ const SidebarContent = ({ onClose = null, setActiveMenu, setActiveTab, component
     navigate("/login")
   }
 
-  const navItems = [
+  var navItems = [
     { label: "Tableau de bord", key: "dashboard", icon: FiHome },
     { label: "Annonces", key: "annonces", icon: FiCompass },
     { label: "Cagnotte", key: "tombola", icon: FiGift },
