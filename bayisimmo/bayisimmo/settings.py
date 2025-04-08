@@ -28,7 +28,7 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG")
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
 ALLOWED_HOSTS = ["*"]
 
@@ -112,7 +112,7 @@ else:
             'PASSWORD': os.getenv("DB_PASSWORD"),
             'HOST': os.getenv("DB_HOST"),
             'PORT': os.getenv("DB_PORT"),
-            'CONN_MAX_AGE': 0,  # Important pour Lambda - pas de connexions persistantes
+            'CONN_MAX_AGE': 0,  
             'OPTIONS': {
                 'connect_timeout': 5,
             }
