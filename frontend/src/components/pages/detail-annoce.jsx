@@ -209,7 +209,7 @@ export default function DetailAnnonce() {
             createur1: user.id,
             createur2: annonce.auteur_detail.id,
           })
-          navigate("/messages") // Rediriger vers la zone des messages
+          navigate(`/messages?discussion=${response.data.id}`) // Rediriger vers la zone des messages
         } catch (err) {
           navigate("/messages")
           // toast({
@@ -598,15 +598,7 @@ export default function DetailAnnonce() {
               <Card className="animate-section" bg={cardBg} boxShadow="sm">
                 <CardBody>
                   <VStack spacing={4}>
-                    {/* <Button
-                      colorScheme="primary"
-                      size="lg"
-                      w="full"
-                      leftIcon={<FaPhone />}
-                    >
-                      Contacter
-                    </Button> */}
-
+                  
                     <Button
                       variant={isFavorite ? "solid" : "outline"}
                       colorScheme={isFavorite ? "red" : "primary"}

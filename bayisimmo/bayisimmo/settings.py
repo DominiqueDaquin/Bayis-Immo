@@ -15,21 +15,20 @@ from datetime import timedelta
 import os
 from dotenv import load_dotenv
 
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
+load_dotenv(os.path.join(BASE_DIR, ".env"))
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-hkjq94t!7+z7(hytbt)67k=ge6ggd(j-g@4uaqg0aey$80d*(#'
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 
-load_dotenv(os.path.join(BASE_DIR, ".env"))
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DEBUG")
 
 ALLOWED_HOSTS = ["*"]
 
@@ -57,7 +56,7 @@ INSTALLED_APPS = [
     'annonce',
 
     #pour s3
-    #"storages"
+    "storages"
 
 
 ]
@@ -96,14 +95,29 @@ WSGI_APPLICATION = 'bayisimmo.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if DEBUG:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
 
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv("DB_NAME"),
+            'USER': os.getenv("DB_USER"),
+            'PASSWORD': os.getenv("DB_PASSWORD"),
+            'HOST': os.getenv("DB_HOST"),
+            'PORT': os.getenv("DB_PORT"),
+            'CONN_MAX_AGE': 0,  # Important pour Lambda - pas de connexions persistantes
+            'OPTIONS': {
+                'connect_timeout': 5,
+            }
+        }
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -144,6 +158,7 @@ STATIC_URL = 'static/'
 MEDIA_URL='media/'
 MEDIA_ROOT= BASE_DIR / 'media'
 STATIC_ROOT=BASE_DIR / 'staticfiles'
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
@@ -174,7 +189,7 @@ DJOSER={
     'USERNAME_RESET_CONFIRM_URL': 'username/reset/confirm/{uid}/{token}',
     'ACTIVATION_URL': 'activate/{uid}/{token}',
     'PERMISSIONS': {
-        'user_list': ['rest_framework.permissions.AllowAny'],  # Modifier si nécessaire
+        'user_list': ['rest_framework.permissions.IsAdmin'],  # Modifier si nécessaire
         'user': ['rest_framework.permissions.IsAuthenticated'],
     }
 }
@@ -191,17 +206,21 @@ if DEBUG:
 
 else:
     CORS_ALLOWED_ORIGINS = [
-    "http://192.168.1.108:5173",  
-    "http://localhost:5173"
+    "https://bayisimmob.com",  
     ]
 
 CORS_ALLOW_CREDENTIALS = True
 
-CSRF_TRUSTED_ORIGINS=[
-    "http://192.168.1.108:5173",  
-    "https://0e88-41-202-220-2.ngrok-free.app",
-    "http://localhost:5173"
-]
+if DEBUG:
+    CSRF_TRUSTED_ORIGINS=[
+        "http://192.168.1.108:5173",  
+        "https://0e88-41-202-220-2.ngrok-free.app",
+        "http://localhost:5173"
+    ]
+else:
+    CSRF_TRUSTED_ORIGINS=[
+        "https://bayisimmob.com",  
+    ]
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Mon API',
@@ -221,28 +240,12 @@ EMAIL_HOST_PASSWORD = os.getenv('PASSWORD')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER  
 
 if DEBUG==False:
-    AWS_ACCESS_KEY_ID = 'votre-access-key'
-    AWS_SECRET_ACCESS_KEY = 'votre-secret-key'
-    AWS_STORAGE_BUCKET_NAME = 'nom-de-votre-bucket'
-    AWS_S3_REGION_NAME = 'us-east-2'  # Région de votre bucket
-    AWS_S3_FILE_OVERWRITE = False
-    AWS_DEFAULT_ACL = None
-    AWS_S3_VERIFY = True
+    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    # AWS_ACCESS_KEY_ID = 'votre-access-key'
+    # AWS_SECRET_ACCESS_KEY = 'votre-secret-key'
+    # AWS_STORAGE_BUCKET_NAME = 'nom-de-votre-bucket'
+    # AWS_S3_REGION_NAME = 'us-east-2'  # Région de votre bucket
+    # AWS_S3_FILE_OVERWRITE = False
+    # AWS_DEFAULT_ACL = None
+    # AWS_S3_VERIFY = True
 
-# LOGGING = {
-#     'version': 1,
-#     'disable_existing_loggers': False,
-#     'handlers': {
-#         'console': {
-#             'level': 'DEBUG',
-#             'class': 'logging.StreamHandler',
-#         },
-#     },
-#     'loggers': {
-#         'django': {
-#             'handlers': ['console'],
-#             'level': 'DEBUG',
-#             'propagate': True,
-#         },
-#     },
-# }

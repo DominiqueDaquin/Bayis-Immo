@@ -1,6 +1,5 @@
-"use client";
-
 import { useState, useRef, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Box,
   Flex,
@@ -25,10 +24,10 @@ import {
   useToast,
   Spinner,
   useColorModeValue,
-  Badge
+  useBreakpointValue
 } from "@chakra-ui/react";
-import { FiMenu, FiSend, FiSmile, FiInfo, FiMoreVertical, FiCheck, FiCheckCircle,FiSpeaker } from "react-icons/fi";
-import { FaUsers } from "react-icons/fa";
+import { FiMenu, FiSend, FiSmile, FiInfo, FiMoreVertical } from "react-icons/fi";
+import { FaArrowLeft } from "react-icons/fa";
 import ContactList from "./chat-contact-item";
 import Message from "./chat-messages";
 import axiosInstance from "@/api/axios";
@@ -56,6 +55,7 @@ const DateDivider = ({ date }) => {
     </Flex>
   );
 };
+
 const groupMessagesByDate = (messages) => {
   const grouped = {};
   messages.forEach(message => {
@@ -67,6 +67,32 @@ const groupMessagesByDate = (messages) => {
   });
   return grouped;
 };
+
+const ChatBackground = () => {
+  const patternColor = useColorModeValue("rgba(0, 0, 0, 0.05)", "rgba(255, 255, 255, 0.05)");
+  
+  return (
+    <Box
+      position="absolute"
+      top={0}
+      left={0}
+      right={0}
+      bottom={0}
+      _before={{
+        content: '""',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundImage: 'radial-gradient(' + patternColor + ' 1px, transparent 1px)',
+        backgroundSize: '20px 20px',
+        pointerEvents: 'none'
+      }}
+    />
+  );
+};
+
 export default function Chat() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedContact, setSelectedContact] = useState(null);
@@ -74,13 +100,15 @@ export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [errorMessages, setErrorMessages] = useState(null);
-  const [unreadCounts, setUnreadCounts] = useState({});
   const messagesEndRef = useRef(null);
   const toast = useToast();
   const { user } = useAuth();
+  const isMobile = useBreakpointValue({ base: true, lg: false });
+  const [searchParams] = useSearchParams();
 
   const bgColor = useColorModeValue("neutral.50", "neutral.900");
   const sidebarBg = useColorModeValue("white", "neutral.800");
+  const chatBg = useColorModeValue("white", "neutral.700");
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -89,12 +117,9 @@ export default function Chat() {
   const markMessagesAsRead = async (discussionId) => {
     try {
       await axiosInstance.patch(`/api/discussions/${discussionId}/marquer-comme-lus/`);
-      setUnreadCounts(prev => ({ ...prev, [discussionId]: 0 }));
-      
-      // Mettre à jour le statut des messages localement
       setMessages(prev => prev.map(msg => {
         if (msg.destinataire === user.id && msg.status === 'e') {
-          return { ...msg, status: 'l' }; // Marquer comme lu
+          return { ...msg, status: 'l' };
         }
         return msg;
       }));
@@ -133,7 +158,15 @@ export default function Chat() {
     };
 
     fetchMessages();
-  }, [selectedContact, toast]);
+  }, [selectedContact, toast, user]);
+
+  useEffect(() => {
+    // Vérifier si on doit afficher directement une discussion depuis l'URL
+    const discussionId = searchParams.get('discussion');
+    if (discussionId && selectedContact?.id !== discussionId) {
+      // La gestion se fait dans ContactList
+    }
+  }, [searchParams]);
 
   const handleSendMessage = async () => {
     if (inputValue.trim() === "" || !selectedContact?.id) return;
@@ -148,13 +181,6 @@ export default function Chat() {
       setMessages(prev => [...prev, response.data]);
       setInputValue("");
       scrollToBottom();
-      
-      if (response.data.destinataire !== user.id) {
-        setUnreadCounts(prev => ({
-          ...prev,
-          [selectedContact.id]: (prev[selectedContact.id] || 0) + 1
-        }));
-      }
     } catch (error) {
       console.error("Erreur lors de l'envoi du message:", error);
       toast({
@@ -169,8 +195,7 @@ export default function Chat() {
 
   const handleSelectContact = (contact) => {
     setSelectedContact(contact);
-    onClose();
-    markMessagesAsRead(contact.id);
+    if (isMobile) onClose();
   };
 
   const renderMessages = () => {
@@ -184,7 +209,7 @@ export default function Chat() {
 
     const groupedMessages = groupMessagesByDate(messages);
     return Object.entries(groupedMessages).map(([date, dateMessages]) => (
-      <Box key={date}>
+      <Box key={date} position="relative">
         <DateDivider date={date} />
         {dateMessages.map((message) => (
           <Message
@@ -194,7 +219,6 @@ export default function Chat() {
             isOwn={message.destinataire !== user.id}
             status={message.status}
             senderName={message.destinataire === user.id ? selectedContact.name : "Vous"}
-            time={message.temps_ecoule}
           />
         ))}
       </Box>
@@ -202,36 +226,27 @@ export default function Chat() {
   };
 
   return (
-    <Container maxW="100%" h="100vh" p={0}>
-
-      <Flex h="full" overflow="hidden">
-        <Box
-          w="350px"
-          borderRight="1px"
-          borderColor="gray.200"
-          bg={sidebarBg}
-          display={{ base: "none", lg: "block" }}
-          h="80vh"
-          overflowY="hidden"
-        >
-          <ContactList 
-            setContact={handleSelectContact}
-            unreadCounts={unreadCounts}
-          />
-        </Box>
-
-        <Flex flex="1" direction="column" bg={sidebarBg} h="80vh" overflow="hidden">
-          <Flex p={4} align="center" borderBottom="1px" borderColor="gray.200" bg={sidebarBg}>
-            <IconButton
-              icon={<FaUsers />}
-              variant="ghost"
-              display={{ base: "flex", lg: "none" }}
-              onClick={onOpen}
-              mr={2}
-              aria-label="Menu"
-            />
-            {selectedContact ? (
-              <>
+    <Container maxW="100%" h="90vh" p={0} bg={bgColor}>
+      {/* Version Mobile */}
+      {isMobile ? (
+        <>
+          {selectedContact ? (
+            <Flex direction="column" h="90vh">
+              {/* Header de la conversation */}
+              <Flex 
+                p={3} 
+                align="center" 
+                borderBottom="1px" 
+                borderColor="gray.200" 
+                bg={sidebarBg}
+              >
+                <IconButton
+                  icon={<FaArrowLeft />}
+                  variant="ghost"
+                  onClick={() => setSelectedContact(null)}
+                  mr={2}
+                  aria-label="Retour"
+                />
                 <Avatar size="sm" name={selectedContact.name} mr={3}>
                   <AvatarBadge boxSize="1em" bg="green.500" />
                 </Avatar>
@@ -243,84 +258,200 @@ export default function Chat() {
                 </Box>
                 <HStack>
                   <IconButton icon={<FiInfo />} variant="ghost" aria-label="Informations" />
-                  <IconButton icon={<FiMoreVertical />} variant="ghost" aria-label="Plus d'options" />
                 </HStack>
+              </Flex>
+
+              {/* Zone des messages */}
+              <Box
+                flex="1"
+                overflowY="auto"
+                position="relative"
+                bg={chatBg}
+              >
+                <ChatBackground />
+                <Box
+                  p={4}
+                  position="relative"
+                  zIndex={1}
+                  h="full"
+                >
+                  {loadingMessages ? (
+                    <Flex justify="center" align="center" h="100%">
+                      <Spinner size="lg" />
+                    </Flex>
+                  ) : errorMessages ? (
+                    <Flex justify="center" align="center" h="100%">
+                      <Text color="red.500">{errorMessages}</Text>
+                    </Flex>
+                  ) : (
+                    renderMessages()
+                  )}
+                  <Box ref={messagesEndRef} />
+                </Box>
+              </Box>
+
+              {/* Zone de saisie */}
+              <Flex 
+                p={3} 
+                borderTop="1px" 
+                borderColor="gray.200" 
+                bg={sidebarBg}
+              >
+                <HStack w="full" spacing={2}>
+                  <IconButton 
+                    icon={<FiSmile />} 
+                    variant="ghost" 
+                    colorScheme="blue" 
+                    aria-label="Emoji" 
+                  />
+                  <Input
+                    placeholder="Écrivez votre message..."
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                    bg={bgColor}
+                    borderRadius="full"
+                    flex="1"
+                  />
+                  <IconButton
+                    icon={<FiSend />}
+                    colorScheme="blue"
+                    aria-label="Envoyer"
+                    onClick={handleSendMessage}
+                    isDisabled={inputValue.trim() === ""}
+                  />
+                </HStack>
+              </Flex>
+            </Flex>
+          ) : (
+            <Box h="90vh" overflowY="auto" bg={sidebarBg}>
+              <ContactList 
+                setContact={handleSelectContact}
+                onMobileClose={onClose}
+              />
+            </Box>
+          )}
+        </>
+      ) : (
+        /* Version Desktop */
+        <Flex h="full" overflow="hidden">
+          {/* Sidebar */}
+          <Box
+            w="350px"
+            borderRight="1px"
+            borderColor="gray.200"
+            bg={sidebarBg}
+            h="90vh"
+            overflowY="scroll"
+          >
+            <ContactList 
+              setContact={handleSelectContact}
+            />
+          </Box>
+
+          {/* Zone de chat principale */}
+          <Flex 
+            flex="1" 
+            direction="column" 
+            bg={chatBg}
+            h="90vh" 
+            overflow="scroll"
+            position="relative"
+          >
+            {selectedContact ? (
+              <>
+                {/* Header de la conversation */}
+                <Flex 
+                  p={3} 
+                  align="center" 
+                  borderBottom="1px" 
+                  borderColor="gray.200" 
+                  bg={sidebarBg}
+                >
+                  <Avatar size="sm" name={selectedContact.name} mr={3}>
+                    <AvatarBadge boxSize="1em" bg="green.500" />
+                  </Avatar>
+                  <Box flex="1">
+                    <Text fontWeight="bold">{selectedContact.name}</Text>
+                    <Text fontSize="xs" color="green.500">
+                      En ligne
+                    </Text>
+                  </Box>
+                  <HStack>
+                    <IconButton icon={<FiInfo />} variant="ghost" aria-label="Informations" />
+                    <IconButton icon={<FiMoreVertical />} variant="ghost" aria-label="Plus d'options" />
+                  </HStack>
+                </Flex>
+
+                {/* Zone des messages */}
+                <Box
+                  flex="1"
+                  overflowY="auto"
+                  position="relative"
+                >
+                  <ChatBackground />
+                  <Box
+                    p={4}
+                    position="relative"
+                    zIndex={1}
+                    h="full"
+                  >
+                    {loadingMessages ? (
+                      <Flex justify="center" align="center" h="100%">
+                        <Spinner size="lg" />
+                      </Flex>
+                    ) : errorMessages ? (
+                      <Flex justify="center" align="center" h="100%">
+                        <Text color="red.500">{errorMessages}</Text>
+                      </Flex>
+                    ) : (
+                      renderMessages()
+                    )}
+                    <Box ref={messagesEndRef} />
+                  </Box>
+                </Box>
+
+                {/* Zone de saisie */}
+                <Flex 
+                  p={3} 
+                  borderTop="1px" 
+                  borderColor="gray.200" 
+                  bg={sidebarBg}
+                >
+                  <HStack w="full" spacing={2}>
+                    <IconButton 
+                      icon={<FiSmile />} 
+                      variant="ghost" 
+                      colorScheme="blue" 
+                      aria-label="Emoji" 
+                    />
+                    <Input
+                      placeholder="Écrivez votre message..."
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                      bg={bgColor}
+                      borderRadius="full"
+                      flex="1"
+                    />
+                    <IconButton
+                      icon={<FiSend />}
+                      colorScheme="blue"
+                      aria-label="Envoyer"
+                      onClick={handleSendMessage}
+                      isDisabled={inputValue.trim() === ""}
+                    />
+                  </HStack>
+                </Flex>
               </>
             ) : (
-              <Text>Sélectionnez une conversation</Text>
-            )}
-          </Flex>
-
-          <VStack
-            flex="1"
-            p={4}
-            overflowY="auto"
-            spacing={4}
-            align="stretch"
-            bg={sidebarBg}
-            css={{
-              "&::-webkit-scrollbar": { width: "4px" },
-              "&::-webkit-scrollbar-thumb": {
-                background: "#CBD5E0",
-                borderRadius: "24px",
-              },
-            }}
-          >
-            {loadingMessages ? (
               <Flex justify="center" align="center" h="100%">
-                <Spinner size="lg" />
+                <Text color="gray.500">Sélectionnez une conversation</Text>
               </Flex>
-            ) : errorMessages ? (
-              <Flex justify="center" align="center" h="100%">
-                <Text color="red.500">{errorMessages}</Text>
-              </Flex>
-            ) : (
-              renderMessages()
             )}
-            <Box ref={messagesEndRef} />
-          </VStack>
-
-          <Flex p={4} borderTop="1px" borderColor="gray.200" bg={sidebarBg}>
-            <HStack w="full" spacing={2}>
-              <InputGroup>
-                <Input
-                  placeholder="Écrivez votre message..."
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-                  bg={bgColor}
-                  borderRadius="full"
-                  py={6}
-                />
-                <InputRightElement h="full">
-                  <IconButton icon={<FiSmile />} variant="ghost" colorScheme="blue" aria-label="Emoji" />
-                </InputRightElement>
-              </InputGroup>
-              <IconButton
-                icon={<FiSend />}
-                colorScheme="blue"
-                aria-label="Envoyer"
-                onClick={handleSendMessage}
-                isDisabled={inputValue.trim() === ""}
-              />
-            </HStack>
           </Flex>
         </Flex>
-      </Flex>
-
-      <Drawer isOpen={isOpen} placement="left" onClose={onClose} size="full">
-        <DrawerOverlay />
-        <DrawerContent>
-          <DrawerCloseButton />
-          <DrawerHeader borderBottomWidth="1px">Conversations</DrawerHeader>
-          <DrawerBody p={0}>
-            <ContactList
-              setContact={handleSelectContact}
-              unreadCounts={unreadCounts}
-            />
-          </DrawerBody>
-        </DrawerContent>
-      </Drawer>
+      )}
     </Container>
   );
 }

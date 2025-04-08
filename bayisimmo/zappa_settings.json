@@ -1,0 +1,54 @@
+{
+    "dev": {
+        "aws_region": "us-east-2",
+        "django_settings": "bayisimmo.settings",
+        "exclude": [
+            "dateutil",
+            "botocore",
+            "s3transfer",
+            "concurrent"
+        ],
+        "vendor": {
+            "include": [
+                "boto3"
+            ]
+        },
+        "profile_name": "default",
+        "project_name": "bayisimmo",
+        "runtime": "python3.12",
+        "s3_bucket": "bayisimmob-zappa-deployment",
+        "slim_handler": true,
+        "environment_variables": {
+            "AWS_STORAGE_BUCKET_NAME": "bayisimmob-zappa-deployment",
+            "AWS_S3_REGION_NAME": "us-east-2",
+            "LYGOS_API_KEY": "lygosapp-d0a66b52-bedd-4baa-b276-51ef20369c5c",
+            "EMAIL": "bayisimmob@gmail.com",
+            "PASSWORD": "jtpb rwni ndnc tbmj",
+            "DB_NAME": "bayisimmob-database",
+            "DB_USER": "Bayisimmob_admin",
+            "DB_PASSWORD": "Immobilier#2025.",
+            "DB_HOST": "bayisimmob-database.cr60maiuofz4.us-east-2.rds.amazonaws.com",
+            "DEBUG": "False",
+            "DJANGO_SECRET_KEY": "django-insecure-hkjq94t!7+z7(hytbt)67k=ge6ggd(j-g@4uaqg0aey$80d*(#"
+        },
+        "domain": "api.bayisimmob.com",
+        "certificate_arn":"arn:aws:acm:us-east-2:964988438441:certificate/eee0c978-f3f6-4a1d-9ea2-75e748df30b0",
+        "vpc_config": {
+            "SubnetIds": [
+                "subnet-0453ab5119d91a81d",
+                "subnet-09553b6f2d996daed",
+                "subnet-0af66a6a3731f4dd1"
+                
+            ],
+            "SecurityGroupIds": [
+                "sg-04f0b3f651300d161"
+            ]
+        },
+        "timeout_seconds": 300,
+        "memory_size": 512,
+        "use_precompiled_packages": true,
+        "keep_warm": false,
+        "delete_local_zip": true,
+        "delete_s3_zip": true
+    }
+}

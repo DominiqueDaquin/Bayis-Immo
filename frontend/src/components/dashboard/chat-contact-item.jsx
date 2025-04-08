@@ -1,6 +1,5 @@
-"use client";
-
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Box,
   Flex,
@@ -77,11 +76,12 @@ const ContactItem = ({ name, lastMessage, time, unread, unreadCount, isActive, i
   );
 };
 
-const ContactList = ({ setContact }) => {
+const ContactList = ({ setContact, onMobileClose }) => {
   const [discussions, setDiscussions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   
   const bgColor = useColorModeValue("neutral.50", "neutral.900");
   const sidebarBg = useColorModeValue("white", "neutral.800");
@@ -91,6 +91,24 @@ const ContactList = ({ setContact }) => {
       try {
         const response = await axiosInstance.get("/api/discussions/mes-discussions/");
         setDiscussions(response.data);
+        
+        // Vérifier si un paramètre discussion est présent dans l'URL
+        const discussionId = searchParams.get('discussion');
+        if (discussionId) {
+          const discussion = response.data.find(d => d.id.toString() === discussionId);
+          if (discussion) {
+            const nom = discussion.createur1 === user.id ? discussion.name2 : discussion.name1;
+            const destinataire = discussion.createur1 === user.id ? discussion.createur2 : discussion.createur1;
+            
+            setContact({
+              id: discussion.id,
+              name: nom,
+              destinataire: destinataire,
+            });
+            
+            await axiosInstance.patch(`/api/discussions/${discussion.id}/marquer-comme-lus/`);
+          }
+        }
       } catch (error) {
         console.error("Erreur lors du chargement des discussions:", error);
         setError("Impossible de charger les discussions. Veuillez réessayer.");
@@ -99,8 +117,8 @@ const ContactList = ({ setContact }) => {
       }
     };
 
-    fetchDiscussions();
-  }, []);
+    if (user) fetchDiscussions();
+  }, [searchParams, user]);
 
   const formatTime = (timestamp) => {
     if (!timestamp) return "";
@@ -144,8 +162,8 @@ const ContactList = ({ setContact }) => {
             name={nom}
             lastMessage={discussion.last_message || "Aucun message"}
             time={formatTime(discussion.last_message_time)}
-            unread={discussion.un_read} // Utilisation du champ un_read
-            unreadCount={discussion.unread_count} // Utilisation du champ unread_count
+            unread={discussion.un_read}
+            unreadCount={discussion.unread_count}
             isOnline={discussion.is_online}
             isActive={false}
             onClick={() => {
@@ -154,7 +172,9 @@ const ContactList = ({ setContact }) => {
                 name: nom,
                 destinataire: destinataire,
               });
-              // Marquer les messages comme lus quand on clique sur la discussion
+              
+              if (onMobileClose) onMobileClose();
+              
               axiosInstance.patch(`/api/discussions/${discussion.id}/marquer-comme-lus/`);
             }}
           />
