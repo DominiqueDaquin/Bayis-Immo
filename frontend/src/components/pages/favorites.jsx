@@ -161,7 +161,7 @@ export default function FavoritesPage() {
                       <Stack spacing={4}>
                         {favorite.annonce.photos && favorite.annonce.photos.length > 0 ? (
                           <Image
-                            src={`${baseUrl }${favorite.annonce.photos[0].photo}`} // Adaptez selon votre structure de données
+                            src={`${baseUrl }${favorite.annonce.photos[0].photo}` || favorite.annonce.photos[0].photo} // Adaptez selon votre structure de données
                             alt={favorite.annonce.titre}
                             borderRadius="lg"
                             height="200px"
