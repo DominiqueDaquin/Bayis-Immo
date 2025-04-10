@@ -82,12 +82,18 @@ class AnnonceView(viewsets.ModelViewSet):
     queryset=Annonce.objects.all()
     serializer_class=AnnonceSerializer
     permission_classes=[IsAnnonceurOrReadOnly]
-    # parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser]
 
     @action(detail=False,methods=['get'],permission_classes=[IsAnnonceur],url_path='mes-annonces')
     def my_annonces(self,request):
         user=request.user
-        annonces=Annonce.objects.filter(creer_par=user)
+        annonces=Annonce.objects.annotate(
+            priority=Case(
+                When(status='p',then=0),
+                default=1,
+                output_field=IntegerField()
+            )
+        ).filter(creer_par=user).order_by('priority')
         serializer=self.get_serializer(annonces,many=True)
         return Response(serializer.data)
 
@@ -189,10 +195,13 @@ class AnnonceView(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
             serializer.save(creer_par=self.request.user)
-            send_mail_to_moderateur(
-                subject= "Nouvelle annonce Crée",
-                message=f" Une nouvelle annonce à été crée par {self.request.user.name} et est en attente de validation"
-            )
+            try:
+                send_mail_to_moderateur(
+                    subject= "Nouvelle annonce Crée",
+                    message=f" Une nouvelle annonce à été crée par {self.request.user.name} et est en attente de validation"
+                )
+            except Exception as e:
+                print(e)
 
 class MediaView(viewsets.ModelViewSet):
     queryset=Media.objects.all()
