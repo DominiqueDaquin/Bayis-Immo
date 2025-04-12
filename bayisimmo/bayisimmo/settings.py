@@ -207,6 +207,7 @@ if DEBUG:
 else:
     CORS_ALLOWED_ORIGINS = [
     "https://bayisimmob.com",  
+    "https://www.bayisimmob.com",
     ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -220,6 +221,7 @@ if DEBUG:
 else:
     CSRF_TRUSTED_ORIGINS=[
         "https://bayisimmob.com",  
+        "https://www.bayisimmob.com",
     ]
 
 SPECTACULAR_SETTINGS = {
