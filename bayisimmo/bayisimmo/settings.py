@@ -210,6 +210,16 @@ else:
     "https://www.bayisimmob.com",
     ]
 
+#APPEND_SLASH = True
+CORS_ALLOW_METHODS = [
+    'GET',
+    'POST',
+    'PUT',
+    'PATCH',
+    'DELETE',
+    'OPTIONS',
+]
+
 CORS_ALLOW_CREDENTIALS = True
 
 if DEBUG:
