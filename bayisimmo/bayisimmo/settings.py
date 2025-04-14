@@ -30,7 +30,7 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ["www.bayisimmob.com","bayisimmob.com"]
 
 LYGOS_API_KEY=os.getenv("LYGOS_API_KEY")
 # Application definition
@@ -210,7 +210,7 @@ else:
     "https://www.bayisimmob.com",
     ]
 
-#APPEND_SLASH = True
+APPEND_SLASH = False
 CORS_ALLOW_METHODS = [
     'GET',
     'POST',
@@ -275,3 +275,23 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'ERROR',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'django_error.log',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file'],
+            'level': 'ERROR',
+            'propagate': True,
+        },
+    },
+}
