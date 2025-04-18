@@ -294,5 +294,10 @@ LOGGING = {
             'level': 'ERROR',
             'propagate': True,
         },
+    'annonce': {
+            'handlers': ['file', 'console'],
+            'level': 'DEBUG',
+            'propagate': False,
+    },
     },
 }

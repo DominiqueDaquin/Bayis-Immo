@@ -88,7 +88,7 @@ class AnnonceView(viewsets.ModelViewSet):
     def my_annonces(self, request):
         # Débogage pour vérifier les en-têtes d'authentification
         import logging
-        logger = logging.getLogger(__name__)
+        logger = logging.getLogger('annonce')
         
         # Log de l'en-tête d'autorisation
         auth_header = request.META.get('HTTP_AUTHORIZATION', 'Non trouvé')
