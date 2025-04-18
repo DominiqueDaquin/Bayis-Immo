@@ -280,14 +280,20 @@ if not DEBUG:
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'simple': {
+            'format': '[{levelname}] {asctime} {message}',
+            'style': '{',
+        },
+    },
     'handlers': {
         'file': {
-            'level': 'ERROR',  # Enregistrer à partir du niveau ERROR
+            'level': 'ERROR',
             'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'django_error.log',  # Fichier où les logs seront enregistrés
+            'filename': BASE_DIR / 'django_error.log',
         },
         'console': {
-            'level': 'DEBUG',  # Afficher dans la console à partir du niveau DEBUG
+            'level': 'DEBUG',
             'class': 'logging.StreamHandler',
             'formatter': 'simple',
         },
@@ -295,13 +301,13 @@ LOGGING = {
     'loggers': {
         'django': {
             'handlers': ['file'],
-            'level': 'ERROR',  # Enregistrer les erreurs de niveau ERROR pour Django
-            'propagate': True,  # Propager les logs au logger parent
+            'level': 'ERROR',
+            'propagate': True,
         },
         'annonce': {
-            'handlers': ['file'],  # Envoi des logs dans le fichier
-            'level': 'ERROR',  # Enregistrer uniquement les erreurs et les niveaux supérieurs
-            'propagate': False,  # Pas de propagation aux autres loggers (ex: logger django)
+            'handlers': ['file'],
+            'level': 'ERROR',
+            'propagate': False,
         },
     },
 }
