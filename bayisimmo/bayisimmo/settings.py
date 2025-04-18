@@ -277,27 +277,31 @@ if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
 
-
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
         'file': {
-            'level': 'ERROR',
+            'level': 'ERROR',  # Enregistrer à partir du niveau ERROR
             'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'django_error.log',
+            'filename': BASE_DIR / 'django_error.log',  # Fichier où les logs seront enregistrés
+        },
+        'console': {
+            'level': 'DEBUG',  # Afficher dans la console à partir du niveau DEBUG
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
         },
     },
     'loggers': {
         'django': {
             'handlers': ['file'],
-            'level': 'ERROR',
-            'propagate': True,
+            'level': 'ERROR',  # Enregistrer les erreurs de niveau ERROR pour Django
+            'propagate': True,  # Propager les logs au logger parent
         },
-    'annonce': {
-            'handlers': ['file', 'console'],
-            'level': 'DEBUG',
-            'propagate': False,
-    },
+        'annonce': {
+            'handlers': ['file'],  # Envoi des logs dans le fichier
+            'level': 'ERROR',  # Enregistrer uniquement les erreurs et les niveaux supérieurs
+            'propagate': False,  # Pas de propagation aux autres loggers (ex: logger django)
+        },
     },
 }
