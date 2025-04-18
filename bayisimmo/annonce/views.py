@@ -84,18 +84,39 @@ class AnnonceView(viewsets.ModelViewSet):
     permission_classes=[IsAnnonceurOrReadOnly]
     parser_classes = [MultiPartParser, FormParser]
 
-    @action(detail=False,methods=['get'],permission_classes=[IsAnnonceur],url_path='mes-annonces')
-    def my_annonces(self,request):
-        user=request.user
-        annonces=Annonce.objects.annotate(
-            priority=Case(
-                When(status='p',then=0),
-                default=1,
-                output_field=IntegerField()
-            )
-        ).filter(creer_par=user).order_by('priority')
-        serializer=self.get_serializer(annonces,many=True)
-        return Response(serializer.data)
+    @action(detail=False, methods=['get'], permission_classes=[IsAnnonceur], url_path='mes-annonces')
+    def my_annonces(self, request):
+        # Débogage pour vérifier les en-têtes d'authentification
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # Log de l'en-tête d'autorisation
+        auth_header = request.META.get('HTTP_AUTHORIZATION', 'Non trouvé')
+        logger.error(f"DEBUG - En-tête Authorization: {auth_header}")
+        logger.error(f"DEBUG - User authentifié: {request.user.is_authenticated}")
+        logger.error(f"DEBUG - Type d'utilisateur: {type(request.user).__name__}")
+        
+        # Gestion utilisateur non authentifié
+        user = request.user
+        if user.is_anonymous:
+            logger.error("DEBUG - Utilisateur anonyme détecté, retour liste vide")
+            return Response([])
+        
+        # Pour les utilisateurs authentifiés, continuer normalement
+        try:
+            annonces = Annonce.objects.annotate(
+                priority=Case(
+                    When(status='p', then=0),
+                    default=1,
+                    output_field=IntegerField()
+                )
+            ).filter(creer_par=user).order_by('priority')
+            serializer = self.get_serializer(annonces, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            # Capture toute erreur pour éviter les 500
+            logger.error(f"DEBUG - Erreur lors de la récupération des annonces: {str(e)}")
+            return Response({"error": str(e)}, status=500)
 
     @action(detail=True, methods=['get'], url_path='commentaires', url_name='mes-commentaires')
     def get_commentaires(self, request, pk=None):

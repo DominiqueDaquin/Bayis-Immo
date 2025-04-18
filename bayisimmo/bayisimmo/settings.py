@@ -30,7 +30,7 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ["www.bayisimmob.com","bayisimmob.com"]
+ALLOWED_HOSTS = ["www.bayisimmob.com","bayisimmob.com","ec2-3-134-235-152.us-east-2.compute.amazonaws.com"]
 
 LYGOS_API_KEY=os.getenv("LYGOS_API_KEY")
 # Application definition
@@ -169,6 +169,7 @@ REST_FRAMEWORK={
     'DEFAULT_AUTHENTICATION_CLASSES':[
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
+        
     ],
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_PARSER_CLASSES': [
