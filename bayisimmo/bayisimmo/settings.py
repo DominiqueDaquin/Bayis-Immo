@@ -211,7 +211,7 @@ else:
     "https://www.bayisimmob.com",
     ]
 
-APPEND_SLASH = False
+APPEND_SLASH = True
 CORS_ALLOW_METHODS = [
     'GET',
     'POST',
@@ -251,6 +251,10 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv('EMAIL')  
 EMAIL_HOST_PASSWORD = os.getenv('PASSWORD')  
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER  
+
+
+
+
 
 if DEBUG==False:
     STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'

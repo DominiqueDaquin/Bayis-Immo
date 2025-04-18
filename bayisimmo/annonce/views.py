@@ -92,10 +92,8 @@ class AnnonceView(viewsets.ModelViewSet):
         
         # Log de l'en-tête d'autorisation
         auth_header = request.META.get('HTTP_AUTHORIZATION', 'Non trouvé')
-        print(auth_header)
         logger.error(f"DEBUG - En-tête Authorization: {auth_header}")
         logger.error(f"DEBUG - User authentifié: {request.user.is_authenticated}")
-        print(request.user.is_authenticated)
         logger.error(f"DEBUG - Type d'utilisateur: {type(request.user).__name__}")
         
         # Gestion utilisateur non authentifié
