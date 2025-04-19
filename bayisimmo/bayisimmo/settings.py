@@ -153,11 +153,12 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
+if DEBUG:
+    STATIC_URL = 'static/'
+    MEDIA_URL='media/'
+    MEDIA_ROOT= BASE_DIR / 'media'
+    STATIC_ROOT=BASE_DIR / 'staticfiles'
 
-STATIC_URL = 'static/'
-MEDIA_URL='media/'
-MEDIA_ROOT= BASE_DIR / 'media'
-STATIC_ROOT=BASE_DIR / 'staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
@@ -257,7 +258,7 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 
 if DEBUG==False:
-    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    
     AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
     AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
     AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME')
@@ -268,7 +269,7 @@ if DEBUG==False:
     AWS_LOCATION = 'static'
 
     # Stockage statique et media
-    STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    STATICFILES_STORAGE = 'bayisimmob.storages.StaticStorage'
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 
     # URLs pour les fichiers statiques et media
