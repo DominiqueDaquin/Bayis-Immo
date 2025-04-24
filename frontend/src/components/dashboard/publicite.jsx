@@ -196,6 +196,7 @@ export default function GestionnaireCampagnes({ isModerateur }) {
     console.log("Dans la publicité");
     const order_id=uuidv4()
     const link=`${baseUrlFrontend}/merci`
+    const linkechec=`${baseUrlFrontend}/echec`
     try {
       const response = await axiosInstance.post("/api/paiement/lygos/", {
         amount:publicite.montant ,
@@ -204,7 +205,7 @@ export default function GestionnaireCampagnes({ isModerateur }) {
         order_id: order_id,
         publicite_id: publicite.id,
         success_url:link,
-        failure_url:link
+        failure_url:linkechec
       })
      console.log(response);
      
@@ -323,11 +324,11 @@ export default function GestionnaireCampagnes({ isModerateur }) {
           <Heading size="lg" color={textColor}>
             {isModerateur ? "Gestion des Publicités" : "Mes Campagnes Publicitaires"}
           </Heading>
-          {!isModerateur && (
+          
             <Button colorScheme="blue" onClick={onOpen} leftIcon={<FiDollarSign />}>
               Créer une publicité
             </Button>
-          )}
+        
         </Flex>
 
         <Box mb={6}>
@@ -380,8 +381,8 @@ export default function GestionnaireCampagnes({ isModerateur }) {
                   </Td>
 
                   <Td>
-                    <Badge colorScheme={campagne.statut=="success" ? "green" :campagne.statut=="failed" ? "red":"yellow"}>
-                      {campagne.statut=="failed"?"Echec":campagne.statut }
+                    <Badge colorScheme={campagne.statut=="completed" ? "green" :campagne.statut=="failed" ? "red":"yellow"}>
+                      {campagne.statut=="failed"?"Echec" : campagne.statut=="completed" ?"Succes":campagne.statut }
                     </Badge>
                   </Td>
 
@@ -421,7 +422,7 @@ export default function GestionnaireCampagnes({ isModerateur }) {
         </Box>
 
         {/* Modal pour créer une nouvelle publicité */}
-        {!isModerateur && (
+       
           <Modal isOpen={isOpen} onClose={onClose} size="lg">
             <ModalOverlay />
             <ModalContent>
@@ -474,7 +475,7 @@ export default function GestionnaireCampagnes({ isModerateur }) {
               </ModalFooter>
             </ModalContent>
           </Modal>
-        )}
+       
       </Container>
     </Box>
   )

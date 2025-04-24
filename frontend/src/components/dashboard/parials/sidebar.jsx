@@ -31,6 +31,9 @@ import { useEffect, useState } from "react"
 import axiosInstance from "@/api/axios"
 import { useAuth } from "@/hooks/useAuth"
 import { useNavigate } from "react-router-dom"
+
+ 
+
 const NavItem = ({ icon, children, onClick, badgeCount, ...rest }) => {
   return (
     <Button
@@ -62,7 +65,7 @@ const NavItem = ({ icon, children, onClick, badgeCount, ...rest }) => {
   )
 }
 
-const SidebarContent = ({ onClose = null, setActiveMenu, setActiveTab, components,IsModerateur }) => {
+const SidebarContent = ({ onClose = null, setActiveMenu, setActiveTab, components }) => {
   const [counts, setCounts] = useState({ 
     unread_discussions: 0, 
     unread_notifications: 0 
@@ -71,7 +74,8 @@ const SidebarContent = ({ onClose = null, setActiveMenu, setActiveTab, component
   const { user, logout,userDetail } = useAuth()
   const navigate = useNavigate()
   const toast = useToast()
-
+  const { userGroups } = useAuth()
+  const isModerateur = userGroups.includes("moderateur")
 
   useEffect(() => {
     const fetchUnreadCounts = async () => {
@@ -120,9 +124,10 @@ const SidebarContent = ({ onClose = null, setActiveMenu, setActiveTab, component
     },
     
     { label: "Paramètres", key: "settings", icon: FiSettings },
+    isModerateur?{ label: "Utilisateurs", key: "utilisateurs", icon: FiUser }:''
   ]
-  if (IsModerateur)
-    navItems=[...{ label: "Utilisateurs", key: "utilisateurs", icon: FiUser }]
+  // if (isModerateur)
+  //   navItems.append({ label: "Utilisateurs", key: "utilisateurs", icon: FiUser })
 
   return (
     <Box
@@ -139,12 +144,12 @@ const SidebarContent = ({ onClose = null, setActiveMenu, setActiveTab, component
         <VStack spacing={3}>
           <Avatar 
             size="lg" 
-            name={user?.name || user?.email} 
+            name={userDetail?.name || user?.email} 
             src={userDetail?.photo}
             bg="blue.500"
             color="white"
           />
-          <Text fontWeight="bold">{user?.name || user?.email}</Text>
+          <Text fontWeight="bold">{userDetail?.name || user?.email}</Text>
           {user?.role && (
             <Badge colorScheme="blue" borderRadius="full" px={2}>
               {user.role}

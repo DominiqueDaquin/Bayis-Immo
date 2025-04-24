@@ -119,6 +119,8 @@ export default function Annonce({ isModerateur }) {
         return "gray"
       case "r":
         return "red"
+      case "s":
+        return "blue"
       default:
         return "gray"
     }
@@ -134,6 +136,8 @@ export default function Annonce({ isModerateur }) {
         return "Désactivé"
       case "r":
         return "Rejetté"
+      case "s":
+        return "Sponsorisé"
       default:
         return status
     }
@@ -373,7 +377,11 @@ export default function Annonce({ isModerateur }) {
 
   const handleStatusChange = async (annonceId, newStatus) => {
     try {
+      console.log("dans la ");
+      
       const response = await axiosInstance.patch(`/api/annonces/${annonceId}/`, { status: newStatus })
+      console.log("reponse",response);
+      
       setProperties(properties.map((t) => (t.id === annonceId ? response.data : t)))
       toast({
         title: "Succès",

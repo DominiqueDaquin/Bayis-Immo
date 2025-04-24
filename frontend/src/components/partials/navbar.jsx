@@ -62,52 +62,8 @@ export default function SimpleNavbar() {
     { label: "Dashboard", href: "/dashboard", icon: <FaChartLine /> },
   ];
 
-  // Animation GSAP au chargement
-  useEffect(() => {
-    gsap.from(navRef.current, {
-      y: 0,
-      opacity: 1,
-      duration: 0.6,
-      ease: "power2.out"
-    });
 
-    gsap.from(logoRef.current, {
-      scale: 0.8,
-      opacity: 0,
-      duration: 0.8,
-      delay: 0.2,
-      ease: "elastic.out(1, 0.5)"
-    });
-  }, []);
 
-  // Animation au scroll
-  useEffect(() => {
-    gsap.to(navRef.current, {
-      y: 0,
-      opacity: 1,
-      duration: 0.3,
-      scrollTrigger: {
-        start: "top top",
-        onUpdate: (self) => {
-          if (self.direction === -1) {
-            // Scroll vers le haut
-            gsap.to(navRef.current, { 
-              y: 0,
-              boxShadow: "0 4px 12px 0 rgba(0, 0, 0, 0.05)",
-              duration: 0.3
-            });
-          } else if (self.direction === 1 && self.scroll() > 100) {
-            // Scroll vers le bas
-            gsap.to(navRef.current, { 
-              y: -16,
-              boxShadow: "none",
-              duration: 0.3
-            });
-          }
-        }
-      }
-    });
-  }, []);
 
   const renderLinks = (links) => {
     return links.map((link, index) => (
@@ -148,7 +104,7 @@ export default function SimpleNavbar() {
       position="sticky"
       top="0"
       zIndex="sticky"
-      opacity={0} // Initial state for animation
+    
     >
       <Flex h={16} alignItems="center" justifyContent="space-between">
         {/* Menu mobile */}

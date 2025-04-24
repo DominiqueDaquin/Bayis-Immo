@@ -17,6 +17,7 @@ import PrivacyPolicy from './components/pages/privacy';
 import PageRemerciementPaiement from './components/pages/remerciements';
 import Page404 from './components/pages/page404';
 import ErrorBoundary from './components/dashboard/error-boundary';
+import PageEchecPaiement from './components/pages/echecs';
 function App() {
     return (
         <AuthProvider>
@@ -38,6 +39,7 @@ function App() {
                     <Route path="/cgu" element={<TermsOfUse />} />
                     <Route path="/privacy" element={<PrivacyPolicy />} />
                     <Route path="/merci" element={<PageRemerciementPaiement />} />
+                    <Route path="/echec" element={<PageEchecPaiement/>}/>
                     <Route path="*" element={<Page404 />} />
 
 

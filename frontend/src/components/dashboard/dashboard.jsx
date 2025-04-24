@@ -74,7 +74,7 @@ export default function Dashboard() {
           borderRightWidth="1px"
           borderRightColor={borderColor}
         >
-          <SidebarContent setActiveMenu={setActiveMenu} setActiveTab={setActiveTab} components={COMPONENTS} />
+          <SidebarContent setActiveMenu={setActiveMenu} setActiveTab={setActiveTab} components={COMPONENTS}  />
         </Box>
 
         {/* Drawer pour mobile */}
@@ -90,7 +90,7 @@ export default function Dashboard() {
               Menu
             </DrawerHeader>
             <DrawerBody p={0}>
-              <SidebarContent onClose={onClose} setActiveMenu={setActiveMenu} setActiveTab={setActiveTab} components={COMPONENTS} isModerateur={isModerateur}/>
+              <SidebarContent onClose={onClose} setActiveMenu={setActiveMenu} setActiveTab={setActiveTab} components={COMPONENTS} />
             </DrawerBody>
           </DrawerContent>
         </Drawer>

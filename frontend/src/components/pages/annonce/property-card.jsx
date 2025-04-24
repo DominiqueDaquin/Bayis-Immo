@@ -1,6 +1,7 @@
 "use client";
 import Rating from "./rating";
 import { useRef, useState } from "react";
+import handlePayerPublicite from "@/components/others/handle-payer-pub";
 import {
   Box,
   Flex,
@@ -30,27 +31,35 @@ import {
   Alert,
   AlertIcon
 } from "@chakra-ui/react";
-import { FaHeart, FaRegHeart, FaBullhorn, FaMoneyBillWave } from "react-icons/fa";
+import { FaHeart, FaRegHeart, FaBullhorn, FaMoneyBillWave, FaStar } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { baseUrl } from "@/config";
 import axiosInstance from "@/api/axios";
 import { useToast } from "@chakra-ui/react";
+
 const PropertyCard = ({ property, isFavorite, onToggleFavorite, id, currentUser }) => {
     const { colorMode } = useColorMode();
     const navigate = useNavigate();
     const cardRef = useRef();
     const cardBg = useColorModeValue("white", "neutral.800");
+    const sponsoredCardBg = useColorModeValue("blue.50", "blue.900");
     const cardBorder = useColorModeValue("neutral.100", "neutral.700");
+    const sponsoredCardBorder = useColorModeValue("blue.200", "blue.700");
     const titleColor = useColorModeValue("neutral.800", "white");
     const priceColor = useColorModeValue("primary.600", "primary.400");
     const favIconColor = useColorModeValue("accent.500", "accent.300");
-    const toast=useToast()
+    const toast = useToast();
+    
+    // Vérifie si l'annonce est sponsorisée
+    const isSponsored = property.status === "s";
+    
     // States pour les modals
     const { isOpen: isBoostOpen, onOpen: onBoostOpen, onClose: onBoostClose } = useDisclosure();
     const { isOpen: isTombolaOpen, onOpen: onTombolaOpen, onClose: onTombolaClose } = useDisclosure();
     const [selectedDuration, setSelectedDuration] = useState("1");
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [pub,setPub]=useState(null)
 
     // Options de durée pour la publicité
     const durationOptions = [
@@ -61,8 +70,6 @@ const PropertyCard = ({ property, isFavorite, onToggleFavorite, id, currentUser 
         { value: "30", label: "1 mois", price: 4000 },
         { value: "365", label: "12 mois", price: 15000 }
     ];
-   
-    
 
     // Vérifie si l'utilisateur courant est le créateur de l'annonce
     const isCreator = currentUser && (currentUser.id === property.auteur_detail?.id);
@@ -81,18 +88,35 @@ const PropertyCard = ({ property, isFavorite, onToggleFavorite, id, currentUser 
                 duree_jours: selectedOption.value,
                 montant: selectedOption.price
             });
-
+            setPub(response.data)
+            console.log(pub);
+            const pubs=pub
+            console.log(pubs);
+            
             toast({
                 title: "Publicité créée",
-                description: `Votre annonce est maintenant boostée pour ${selectedOption.label}`,
+                description: `vous allez être redirigé vers le paiement`,
                 status: "success",
                 duration: 5000,
                 isClosable: true,
             });
             onBoostClose();
+            try{
+              console.log("hello");
+              
+              handlePayerPublicite(pub)
+            }catch(err){
+              toast({
+                title: "Passez au paiement",
+                description: `veuillez vous rendre au niveau de votre dashboard pour finaliser le paiement`,
+                status: "alert",
+                duration: 5000,
+                isClosable: true,
+            });
+            }
+            
         } catch (err) {
-          console.log("une erreur est survenue",err);
-          
+            console.log("une erreur est survenue", err);
             setError(err.response?.data || "Une erreur est survenue");
         } finally {
             setIsLoading(false);
@@ -144,11 +168,34 @@ const PropertyCard = ({ property, isFavorite, onToggleFavorite, id, currentUser 
             transform: "translateY(-8px)",
             boxShadow: "xl"
           }}
-          boxShadow="md"
+          boxShadow={isSponsored ? "0 0 10px rgba(0, 100, 255, 0.3)" : "md"}
           borderWidth="1px"
-          borderColor={cardBorder}
-          bg={cardBg}
+          borderColor={isSponsored ? sponsoredCardBorder : cardBorder}
+          bg={isSponsored ? sponsoredCardBg : cardBg}
+          position="relative"
         >
+          {/* Badge sponsorisé */}
+          {isSponsored && (
+            <Box
+              position="absolute"
+              top={2}
+              left={2}
+              zIndex={1}
+              bg="blue.500"
+              color="white"
+              px={2}
+              py={1}
+              borderRadius="md"
+              display="flex"
+              alignItems="center"
+              fontSize="sm"
+              fontWeight="bold"
+            >
+              <FaStar style={{ marginRight: "4px" }} />
+              Sponsorisé
+            </Box>
+          )}
+
           <Box position="relative">
             <Image
               src={`${baseUrl}${property.photos[0]?.photo}` || "https://via.placeholder.com/300" || property.photos[0]?.photo}
@@ -173,18 +220,22 @@ const PropertyCard = ({ property, isFavorite, onToggleFavorite, id, currentUser 
                 }}
               />
             </Box>
-            <Badge
+            {/* <Badge
               position="absolute"
               bottom="2"
               left="2"
-              colorScheme={property.status === "a" ? "success" : "warning"}
+              colorScheme={
+                property.status === "a" ? "green" : 
+                property.status === "s" ? "blue" : "orange"
+              }
               px={2}
               py={1}
               borderRadius="md"
               textTransform="capitalize"
             >
-              {property.status === "a" ? "Disponible" : "En attente"}
-            </Badge>
+              {property.status === "a" ? "Disponible" : 
+               property.status === "s" ? "Sponsorisé" : ""}
+            </Badge> */}
           </Box>
           <CardBody>
             <VStack align="start" spacing={3}>

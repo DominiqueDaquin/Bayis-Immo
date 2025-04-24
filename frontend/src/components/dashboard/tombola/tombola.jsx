@@ -110,7 +110,7 @@ export default function Tombola({ isModerateur }) {
       } catch (error) {
         toast({
           title: "Erreur",
-          description: "Impossible de charger les tombolas.",
+          description: "Impossible de charger les cagnottes.",
           status: "error",
           duration: 5000,
           isClosable: true,
@@ -134,7 +134,7 @@ export default function Tombola({ isModerateur }) {
       onCreateClose()
       toast({
         title: "Succès",
-        description: "La tombola a été créée avec succès.",
+        description: "La cagnotte a été créée avec succès.",
         status: "success",
         duration: 5000,
         isClosable: true,
@@ -144,7 +144,7 @@ export default function Tombola({ isModerateur }) {
       
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue lors de la création de la tombola.",
+        description: "Une erreur est survenue lors de la création de la cagnotte.",
         status: "error",
         duration: 5000,
         isClosable: true,
@@ -160,7 +160,7 @@ export default function Tombola({ isModerateur }) {
       onEditClose()
       toast({
         title: "Succès",
-        description: "La tombola a été mise à jour avec succès.",
+        description: "La cagnotte a été mise à jour avec succès.",
         status: "success",
         duration: 5000,
         isClosable: true,
@@ -168,7 +168,7 @@ export default function Tombola({ isModerateur }) {
     } catch (error) {
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue lors de la mise à jour de la tombola.",
+        description: "Une erreur est survenue lors de la mise à jour de la cagnotte.",
         status: "error",
         duration: 5000,
         isClosable: true,
@@ -184,7 +184,7 @@ export default function Tombola({ isModerateur }) {
       onDeleteClose()
       toast({
         title: "Succès",
-        description: "La tombola a été supprimée avec succès.",
+        description: "La cagnotte a été supprimée avec succès.",
         status: "success",
         duration: 5000,
         isClosable: true,
@@ -192,7 +192,7 @@ export default function Tombola({ isModerateur }) {
     } catch (error) {
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue lors de la suppression de la tombola.",
+        description: "Une erreur est survenue lors de la suppression de la cagnotte.",
         status: "error",
         duration: 5000,
         isClosable: true,
@@ -207,7 +207,7 @@ export default function Tombola({ isModerateur }) {
       setTombolas(tombolas.map((t) => (t.id === tombolaId ? response.data : t)))
       toast({
         title: "Succès",
-        description: `La tombola a été ${newStatus === "a" ? "validée" : "rejetée"} avec succès.`,
+        description: `La Cagnotte a été ${newStatus === "a" ? "validée" : "rejetée"} avec succès.`,
         status: "success",
         duration: 5000,
         isClosable: true,
@@ -215,7 +215,7 @@ export default function Tombola({ isModerateur }) {
     } catch (error) {
       toast({
         title: "Erreur",
-        description: `Une erreur est survenue lors de la ${newStatus === "a" ? "validation" : "rejet"} de la tombola.`,
+        description: `Une erreur est survenue lors de la ${newStatus === "a" ? "validation" : "rejet"} de la cagnotte.`,
         status: "error",
         duration: 5000,
         isClosable: true,
@@ -233,11 +233,11 @@ export default function Tombola({ isModerateur }) {
       <Container maxW="7xl" py={8} px={{ base: 0, md: 8 }}>
         <Box bg={sidebarBg} p={6} borderRadius="md" boxShadow="md">
           <Flex justify="space-between" align="center" mb={8}>
-            <Heading size="lg">{isModerateur ? "Tombolas à valider" : "Mes Tombolas"}</Heading>
+            <Heading size="lg">{isModerateur ? "Cagnottes à valider" : "Mes Cagnotte"}</Heading>
             
               <Button leftIcon={<FiPlus />} colorScheme="blue" onClick={onCreateOpen}>
               {
-                isMobile?("Créer"):("Créer une tombola")
+                isMobile?("Créer"):("Créer une Cagnotte")
               }
                 
               </Button>
@@ -250,7 +250,7 @@ export default function Tombola({ isModerateur }) {
                 <FiSearch color="gray.300" />
               </InputLeftElement>
               <Input
-                placeholder="Rechercher une tombola..."
+                placeholder="Rechercher une cagnotte..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -274,7 +274,7 @@ export default function Tombola({ isModerateur }) {
             <Loading />
           ) : filteredTombolas.length === 0 ? (
             <Text textAlign="center" fontSize="lg" color="gray.500">
-              Aucune tombola trouvée.
+              Aucune cagnotte trouvée.
             </Text>
           ) : isMobile ? (
             <VStack spacing={4}>
@@ -384,7 +384,7 @@ export default function Tombola({ isModerateur }) {
         <Modal isOpen={isViewOpen} onClose={onViewClose} size={modalSize}>
           <ModalOverlay />
           <ModalContent>
-            <ModalHeader>Détails de la tombola</ModalHeader>
+            <ModalHeader>Détails de la cagnotte</ModalHeader>
             <ModalCloseButton />
             <ModalBody>
               {selectedTombola && (
@@ -415,7 +415,7 @@ export default function Tombola({ isModerateur }) {
             <Modal isOpen={isCreateOpen} onClose={onCreateClose} size={modalSize}>
               <ModalOverlay />
               <ModalContent>
-                <ModalHeader>Créer une tombola</ModalHeader>
+                <ModalHeader>Créer une cagnotte</ModalHeader>
                 <ModalCloseButton />
                 <ModalBody>
                   <TombolaForm onSubmit={handleCreateSubmit} onCancel={onCreateClose} />
@@ -425,7 +425,7 @@ export default function Tombola({ isModerateur }) {
             <Modal isOpen={isEditOpen} onClose={onEditClose} size={modalSize}>
               <ModalOverlay />
               <ModalContent>
-                <ModalHeader>Modifier la tombola</ModalHeader>
+                <ModalHeader>Modifier la cagnotte</ModalHeader>
                 <ModalCloseButton />
                 <ModalBody>
                   {selectedTombola && (
@@ -441,10 +441,10 @@ export default function Tombola({ isModerateur }) {
           <AlertDialogOverlay>
             <AlertDialogContent>
               <AlertDialogHeader fontSize="lg" fontWeight="bold">
-                Supprimer la tombola
+                Supprimer la cagnotte
               </AlertDialogHeader>
               <AlertDialogBody>
-                Êtes-vous sûr de vouloir supprimer cette tombola ? Cette action est irréversible.
+                Êtes-vous sûr de vouloir supprimer cette cagnotte ? Cette action est irréversible.
               </AlertDialogBody>
               <AlertDialogFooter>
                 <Button ref={cancelRef} onClick={onDeleteClose}>
