@@ -32,7 +32,7 @@ class Annonce(models.Model):
         ('p','en attente'),
         ('r','rejecter'),
         ('a','approuver'),
-        ('s','signaler'),
+        ('s','sponsorise'),
         ('d','desactivez')
     ]
     titre=models.CharField(max_length=255,db_index=True)
@@ -185,6 +185,12 @@ class Commentaire(models.Model):
     creer_le=models.DateTimeField(auto_now_add=True)
 
 class Publicite(models.Model):
+    CHOICES=[
+        ("p","En attente"),
+        ("a","approuver"),
+        ("r","rejeter")
+        
+    ]
     user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)
     titre = models.CharField(max_length=255)
     annonce = models.ForeignKey(Annonce, on_delete=models.CASCADE)
@@ -194,7 +200,7 @@ class Publicite(models.Model):
     order_id=models.CharField(max_length=100,null=True)
     is_payed=models.BooleanField(default=False)
     duree_jours=models.SmallIntegerField(default=0)
-    statut=models.CharField(max_length=20,default="En attente")
+    statut=models.CharField(max_length=1,default="p",choices=CHOICES)
 
 
     class Meta:
@@ -203,13 +209,13 @@ class Publicite(models.Model):
     
 
     # @property
-    # def nombre_de_jours(self):
+    # def duree_jours(self):
     #     montant_quotidien = 250
     #     return max(int(self.montant // montant_quotidien), 2)
 
     @property
     def date_fin(self):
-        return self.date_creation + timedelta(days=int(self.nombre_de_jours))
+        return self.date_creation + timedelta(days=int(self.duree_jours))
 
     def clean(self):
         if self.montant < 250:
@@ -220,7 +226,7 @@ class Publicite(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.titre} - {self.nombre_de_jours} jours (Fin: {self.date_fin})"
+        return f"{self.titre} - {self.duree_jours} jours (Fin: {self.date_fin})"
 
 class Vue(models.Model):
     """

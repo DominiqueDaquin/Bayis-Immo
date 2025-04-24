@@ -30,7 +30,7 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ["www.bayisimmob.com","bayisimmob.com","ec2-3-134-235-152.us-east-2.compute.amazonaws.com"]
+ALLOWED_HOSTS = ["www.bayisimmob.com","bayisimmob.com","ec2-3-134-235-152.us-east-2.compute.amazonaws.com","127.0.0.1"]
 
 LYGOS_API_KEY=os.getenv("LYGOS_API_KEY")
 # Application definition
@@ -187,7 +187,7 @@ DJOSER={
     'USERNAME_RESET_CONFIRM_URL': 'username/reset/confirm/{uid}/{token}',
     'ACTIVATION_URL': 'activate/{uid}/{token}',
     'PERMISSIONS': {
-        'user_list': ['rest_framework.permissions.IsAdmin'],  # Modifier si nécessaire
+        'user_list': ['rest_framework.permissions.IsAdminUser'],  # Modifier si nécessaire
         'user': ['rest_framework.permissions.IsAuthenticated'],
     }
 }
@@ -249,35 +249,91 @@ EMAIL_HOST_USER = os.getenv('EMAIL')
 EMAIL_HOST_PASSWORD = os.getenv('PASSWORD')  
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER  
 
+STORAGES = {
+    "default": {  # Pour les fichiers média (FileField, ImageField)
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            "access_key": os.getenv('AWS_ACCESS_KEY_ID'),
+            "secret_key": os.getenv('AWS_SECRET_ACCESS_KEY'),
+            "bucket_name": os.getenv('AWS_STORAGE_BUCKET_NAME'),
+            "region_name": os.getenv('AWS_S3_REGION_NAME'),
+            "default_acl": "public-read",
+            "file_overwrite": False,
+            "location": "media",
+            "querystring_auth": False,
+            "custom_domain": f"{os.getenv('AWS_STORAGE_BUCKET_NAME')}.s3.amazonaws.com",
+        },
+    },
+    "staticfiles": {  # Pour les fichiers statiques (collectstatic)
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            "access_key": os.getenv('AWS_ACCESS_KEY_ID'),
+            "secret_key": os.getenv('AWS_SECRET_ACCESS_KEY'),
+            "bucket_name": os.getenv('AWS_STORAGE_BUCKET_NAME'),
+            "region_name": os.getenv('AWS_S3_REGION_NAME'),
+            "default_acl": "public-read",
+            "location": "static",
+            "querystring_auth": False,
+            "custom_domain": f"{os.getenv('AWS_STORAGE_BUCKET_NAME')}.s3.amazonaws.com",
+        },
+    },
+}
 
 
-
-
-
-STATIC_ROOT = BASE_DIR / 'staticfiles'  
-MEDIA_ROOT = BASE_DIR / 'media'
-
-if not DEBUG:
-    # Configuration S3
-    AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
-    AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
+if DEBUG:
+    STATIC_URL = 'static/'
+    MEDIA_URL='media/'
+    MEDIA_ROOT= BASE_DIR / 'media'
+else:
+    # AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
+    # AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
     AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME')
-    AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME')  
-    AWS_S3_FILE_OVERWRITE = False
-    AWS_DEFAULT_ACL = 'public'  
+    # AWS_S3_REGION_NAME = os.getenv('AWS_S3_REGION_NAME')
+    # AWS_S3_FILE_OVERWRITE = False
+    # AWS_DEFAULT_ACL = 'public-read'
+    # AWS_S3_SIGNATURE_VERSION = 's3v4'
     AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
     AWS_LOCATION = 'static'
 
-    # Stockage statique et media
-    STATICFILES_STORAGE = 'bayisimmob.storages.StaticStorage'
-    DEFAULT_FILE_STORAGE = 'bayisimmob.storages.MediaStorage'
+    STATICFILES_STORAGE = 'bayisimmo.storages.StaticStorage'
+    DEFAULT_FILE_STORAGE = 'bayisimmo.storages.MediaStorage'
 
-    # URLs pour les fichiers statiques et media
     STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/{AWS_LOCATION}/'
     MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
-else:
-    STATIC_URL = 'static/'
-    MEDIA_URL = 'media/'
+    AWS_DEFAULT_ACL = None  # Désactive totalement l’ajout d’ACL
+    AWS_S3_OBJECT_PARAMETERS = {}
+    STORAGES = {
+        "default": {  # Pour les fichiers média (FileField, ImageField)
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {
+                "access_key": os.getenv('AWS_ACCESS_KEY_ID'),
+                "secret_key": os.getenv('AWS_SECRET_ACCESS_KEY'),
+                "bucket_name": os.getenv('AWS_STORAGE_BUCKET_NAME'),
+                "region_name": os.getenv('AWS_S3_REGION_NAME'),
+                #"default_acl": "none",
+                "file_overwrite": False,
+                "location": "media",
+                "querystring_auth": False,
+                "custom_domain": f"{os.getenv('AWS_STORAGE_BUCKET_NAME')}.s3.amazonaws.com",
+            },
+        },
+        "staticfiles": {  # Pour les fichiers statiques (collectstatic)
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {
+                "access_key": os.getenv('AWS_ACCESS_KEY_ID'),
+                "secret_key": os.getenv('AWS_SECRET_ACCESS_KEY'),
+                "bucket_name": os.getenv('AWS_STORAGE_BUCKET_NAME'),
+                "region_name": os.getenv('AWS_S3_REGION_NAME'),
+                #"default_acl": "none",
+                "location": "static",
+                "querystring_auth": False,
+                "custom_domain": f"{os.getenv('AWS_STORAGE_BUCKET_NAME')}.s3.amazonaws.com",
+            },
+        },
+    }
+
+
+STATIC_ROOT=BASE_DIR / 'staticfiles'
 
 if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -285,37 +341,38 @@ if not DEBUG:
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
 
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'simple': {
-            'format': '[{levelname}] {asctime} {message}',
-            'style': '{',
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'simple': {
+                'format': '[{levelname}] {asctime} {message}',
+                'style': '{',
+            },
         },
-    },
-    'handlers': {
-        'file': {
-            'level': 'ERROR',
-            'class': 'logging.FileHandler',
-            'filename': BASE_DIR / 'django_error.log',
+        'handlers': {
+            'file': {
+                'level': 'ERROR',
+                'class': 'logging.FileHandler',
+                'filename': BASE_DIR / 'django_error.log',
+            },
+            'console': {
+                'level': 'DEBUG',
+                'class': 'logging.StreamHandler',
+                'formatter': 'simple',
+            },
         },
-        'console': {
-            'level': 'DEBUG',
-            'class': 'logging.StreamHandler',
-            'formatter': 'simple',
+        'loggers': {
+            'django': {
+                'handlers': ['file'],
+                'level': 'ERROR',
+                'propagate': True,
+            },
+            'storages': {'level': 'DEBUG', 'handlers': ['console']},
+            'annonce': {
+                'handlers': ['file'],
+                'level': 'ERROR',
+                'propagate': False,
+            },
         },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['file'],
-            'level': 'ERROR',
-            'propagate': True,
-        },
-        'annonce': {
-            'handlers': ['file'],
-            'level': 'ERROR',
-            'propagate': False,
-        },
-    },
-}
+    }

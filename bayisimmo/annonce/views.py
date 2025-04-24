@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated,IsAuthenticatedOrReadOnly
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser,JSONParser
 from rest_framework.exceptions import NotFound
 from authentification.permissions import IsAnnonceur,IsAnnonceurOrReadOnly
 from django.contrib.auth import get_user_model
@@ -82,7 +82,7 @@ class AnnonceView(viewsets.ModelViewSet):
     queryset=Annonce.objects.all()
     serializer_class=AnnonceSerializer
     permission_classes=[IsAnnonceurOrReadOnly]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser,JSONParser]
 
     @action(detail=False, methods=['get'], permission_classes=[IsAnnonceur], url_path='mes-annonces')
     def my_annonces(self, request):
@@ -212,7 +212,7 @@ class AnnonceView(viewsets.ModelViewSet):
                     When(status='a',then=1),
                     default=2,
                     output_field=IntegerField()
-                )).order_by("priority","-creer_le")
+                )).exclude(status='p').order_by("priority","-creer_le")
 
     def perform_create(self, serializer):
             serializer.save(creer_par=self.request.user)
@@ -591,13 +591,36 @@ class PubliciteView(viewsets.ModelViewSet):
             )
 
 
+    def get_queryset(self):
+        user=self.request.user
+        
+        if user.groups.filter(name="moderateur").exists():
+            return Publicite.objects.annotate(
+                statut_priority=Case(
+                    When(statut='p', then=0),  
+                    default=1,
+                    output_field=IntegerField(),
+                )
+        ).filter(Q(is_payed=True) | Q(user=user) ).order_by('statut_priority','-date_creation')
+        else:
+            return Publicite.objects.filter(statut='a').order_by('-date_creation')
+
+
     def perform_create(self, serializer):
         """Assigner automatiquement l'utilisateur connecté lors de la création."""
         serializer.save(user=self.request.user)
-        send_mail_to_moderateur(
-                subject= "Nouvelle Publicité crée",
-                message=f" Une nouvelle publicité à été crée par {self.request.user.name} et est en attente de validation"
-            )
+        try:
+            # annonce_id=self.request.get("annonce")
+            # annonce=Annonce.objects.get(pk=annonce_id)
+            # if annonce:
+            #     annonce.status='s'
+            #     annonce.save()
+            send_mail_to_moderateur(
+                    subject= "Nouvelle Publicité crée",
+                    message=f" Une nouvelle publicité à été crée par {self.request.user.name} et est en attente de validation"
+                )
+        except Exception as e:
+            print(e)
         
         
 
