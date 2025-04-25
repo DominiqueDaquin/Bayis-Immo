@@ -13,7 +13,7 @@ import {
   Card,
   CardBody,
 } from "@chakra-ui/react"
-import { FiEdit2, FiTrash2, FiEye } from "react-icons/fi"
+import { FiEdit2, FiTrash2, FiEye,FiCheck,FiX } from "react-icons/fi"
 import { baseUrl } from "@/config"
 const getStatusColor = (status) => {
   switch (status) {
