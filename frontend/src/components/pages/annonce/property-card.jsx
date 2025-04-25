@@ -198,7 +198,7 @@ const PropertyCard = ({ property, isFavorite, onToggleFavorite, id, currentUser 
 
           <Box position="relative">
             <Image
-              src={`${property.photos[0]?.photo}` || "https://via.placeholder.com/300" }
+              src={`${property.photos[0]?.photo}`}
               alt={property.titre}
               height={{ base: "200px", md: "240px" }}
               width="100%"
@@ -251,7 +251,7 @@ const PropertyCard = ({ property, isFavorite, onToggleFavorite, id, currentUser 
                 <Avatar 
                   size="sm" 
                   name={ property.profil_auteur || property.creer_par } 
-                  src={`${baseUrl}${property.auteur_detail.photo}` || property.auteur_detail.photo} 
+                  src={`${property.auteur_detail.photo}`} 
                   mr={2}
                 />
                 <Text fontSize="sm" color={useColorModeValue("neutral.600", "neutral.300")} flex={1}>

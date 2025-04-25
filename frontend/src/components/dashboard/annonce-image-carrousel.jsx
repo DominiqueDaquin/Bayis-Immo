@@ -12,8 +12,7 @@ import {
   FiChevronRight,
 } from "react-icons/fi"
 
-// Composant pour le carrousel d'images
-const baseUrl='http://127.0.0.1:8000'
+import { baseUrl } from "@/config"
 
 
 const ImageCarousel = ({ images }) => {
@@ -30,7 +29,7 @@ const ImageCarousel = ({ images }) => {
   return (
     <Box position="relative">
       <Image
-        src={`${baseUrl}${images[currentIndex]}` || "/placeholder.svg"}
+        src={`${images[currentIndex]}` || "/placeholder.svg"}
         alt={`Image ${currentIndex + 1}`}
         w="100%"
         h={{ base: "250px", md: "400px" }}

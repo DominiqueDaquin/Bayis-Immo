@@ -297,6 +297,7 @@ export default function Tombola({ isModerateur }) {
                   isModerateur={isModerateur}
                   onValidate={() => handleStatusChange(tombola.id, "a")}
                   onReject={() => handleStatusChange(tombola.id, "r")}
+                  
                 />
               ))}
             </VStack>

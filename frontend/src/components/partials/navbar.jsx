@@ -62,9 +62,6 @@ export default function SimpleNavbar() {
     { label: "Dashboard", href: "/dashboard", icon: <FaChartLine /> },
   ];
 
-
-
-
   const renderLinks = (links) => {
     return links.map((link, index) => (
       <Link

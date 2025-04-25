@@ -275,7 +275,7 @@ export default function Annonce({ isModerateur }) {
                 <Td>
                   {property.photos.length > 0 ? (
                     <Image
-                      src={`${baseUrl}${property.photos[0].photo}` || property.photos[0].photo}
+                      src={`${property.photos[0].photo}`}
                       alt={property.titre}
 
                       boxSize="100px"

@@ -54,7 +54,7 @@ const PropertyCard = ({ property, onView, onEdit, onDelete,isModerateur,handleSt
   
     return (
       <Card mb={4} overflow="hidden" variant="outline">
-        <Image src={ `${baseUrl}${property.photos[0]?.photo}`  || "/placeholder.svg"} alt={title} height="200px" objectFit="cover" />
+        <Image src={ `${property.photos[0]?.photo}`  || "/placeholder.svg"} alt={title} height="200px" objectFit="cover" />
         <CardBody>
           <VStack align="start" spacing={2}>
             <Heading size="md">{title}</Heading>
