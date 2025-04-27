@@ -336,7 +336,7 @@ export default function DetailAnnonce() {
             <Box className="animate-section" mb={8}>
               <AspectRatio ratio={16 / 9}>
                 <Image
-                  src={`${baseUrl}${annonce.photos[currentImageIndex]?.photo}` || annonce.photos[currentImageIndex]?.photo}
+                  src={`${annonce.photos[currentImageIndex]?.photo}` || `${baseUrl}${annonce.photos[currentImageIndex]?.photo}` || annonce.photos[currentImageIndex]?.photo}
                   alt={`Image ${currentImageIndex + 1}`}
                   objectFit="cover"
                   borderRadius="xl"
@@ -360,7 +360,7 @@ export default function DetailAnnonce() {
                       onClick={() => setCurrentImageIndex(index)}
                     >
                       <Image
-                        src={`${baseUrl}${photo.photo}` || photo.photo}
+                        src={`${photo.photo}` || `${baseUrl}${photo.photo}` || photo.photo}
                         alt={`Miniature ${index + 1}`}
                         w="full"
                         h="full"
@@ -548,7 +548,7 @@ export default function DetailAnnonce() {
                       <Avatar
                         size="lg"
                         name={annonce.auteur_detail.name}
-                        src={`${baseUrl}${annonce.auteur_detail.photo}` || annonce.auteur_detail.photo}
+                        src={`${annonce.auteur_detail.photo}` || `${baseUrl}${annonce.auteur_detail.photo}` || annonce.auteur_detail.photo}
                         mr={4}
                       />
                       <Box>
@@ -655,7 +655,7 @@ export default function DetailAnnonce() {
           <ModalBody p={0}>
             <AspectRatio ratio={16 / 9}>
               <Image
-                src={`${baseUrl}${annonce.photos[currentImageIndex]?.photo}` || annonce.photos[currentImageIndex]?.photo }
+                src={`${annonce.photos[currentImageIndex]?.photo}` || `${baseUrl}${annonce.photos[currentImageIndex]?.photo}` || annonce.photos[currentImageIndex]?.photo }
                 alt={`Image ${currentImageIndex + 1}`}
                 objectFit="contain"
               />
