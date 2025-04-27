@@ -79,7 +79,7 @@ const Footer = () => {
     setIsLoading(true)
     
     try {
-      await axiosInstance.post('api/send-mail', formData)
+      await axiosInstance.post('api/send-mail/', formData)
       
       toast({
         title: "Message envoyé",
@@ -117,8 +117,9 @@ const Footer = () => {
       borderTopWidth="1px"
       borderTopColor={borderColor}
       mt="auto"
+      
     >
-      <Container as={Stack} maxW={'7xl'} py={10} spacing={10}>
+      <Container as={Stack} maxW={'7xl'} py={10} spacing={10} >
 
 
         {/* Section juridique */}
@@ -152,7 +153,7 @@ const Footer = () => {
                 <Link href={'/privacy'} fontSize="sm">Politique de confidentialité</Link>
                 <Link href={'/cookies'} fontSize="sm">Préférences cookies</Link>
                 <Link href={'/mentions'} fontSize="sm">Mentions légales</Link>
-                <Link href={'#'} onClick={onOpen}>Contactez-nous</Link>
+                <Link href={'#'} onClick={onOpen} fontSize="sm">Contactez-nous</Link>
               </Flex>
               <Flex align="center" justify="center" color={textColor}>
                 <Icon as={RiCopyrightLine} mr={1} />

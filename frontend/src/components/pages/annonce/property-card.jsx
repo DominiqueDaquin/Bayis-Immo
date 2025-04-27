@@ -198,7 +198,7 @@ const PropertyCard = ({ property, isFavorite, onToggleFavorite, id, currentUser 
 
           <Box position="relative">
             <Image
-              src={`${property.photos[0]?.photo}`}
+              src={`${property.photos[0]?.photo}`  || `${baseUrl}${property.photos[0]?.photo}`}
               alt={property.titre}
               height={{ base: "200px", md: "240px" }}
               width="100%"

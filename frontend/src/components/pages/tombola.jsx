@@ -29,6 +29,10 @@ import {
   ModalFooter,
   Image,
   useDisclosure,
+  SimpleGrid,
+  AspectRatio,
+  Stack,
+  Divider,
 } from "@chakra-ui/react"
 import { FaHeart, FaUsers, FaClock } from "react-icons/fa"
 import { FiSearch } from "react-icons/fi"
@@ -39,8 +43,12 @@ import Footer from "../partials/footer"
 import { useAuth } from "@/hooks/useAuth"
 import { v4 as uuidv4 } from "uuid"
 import { baseUrl, baseUrlFrontend } from "@/config"
+import money from "@/assets/money.png"
+import banImage from "@/assets/ban-tombola.png"
+import cagnotteImg from "@/assets/default-cagnotte.png"
+import pattern from "@/assets/pattern_opacite_reduite.png"
 
-const DEFAULT_TOMBOLA_IMAGE = "/default-tombola.jpg"
+const DEFAULT_TOMBOLA_IMAGE = cagnotteImg
 
 const TombolaListing = () => {
   // Hooks et état initial
@@ -55,22 +63,25 @@ const TombolaListing = () => {
   const [searchQuery, setSearchQuery] = useState("")
   const [sortBy, setSortBy] = useState("participants")
   const [isLoading, setIsLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 6
 
   const isModerateur = userGroups?.includes("moderateur") || false
+  const isCreator = (tombola) => user && tombola.creer_par === user.id
   const isMobile = useBreakpointValue({ base: true, md: false })
   const toast = useToast()
 
   // Couleurs et styles
   const bgColor = useColorModeValue("neutral.50", "neutral.900")
-  const sidebarBg = useColorModeValue("white", "neutral.800")
+  const cardBg = useColorModeValue("white", "neutral.800")
   const headerBg = useColorModeValue("white", "neutral.800")
   const borderColor = useColorModeValue("neutral.200", "neutral.700")
   const textColor = useColorModeValue("neutral.800", "neutral.100")
-
+  const buttonBg = useColorModeValue("blue.500", "blue.300")
+  const buttonHoverBg = useColorModeValue("blue.600", "blue.400")
+  const banSize = useBreakpointValue({ base: "250px", md: "90vh" });
   // Vérification du statut de paiement
   const checkPaymentStatus = async (participant) => {
-    console.log("hello");
-
     try {
       if (participant.order_id && !participant.is_payed) {
         const response = await axiosInstance.post("/api/paiement/lygos/status/", {
@@ -93,7 +104,6 @@ const TombolaListing = () => {
 
     try {
       const response = await axiosInstance.get(`/api/users/participations/`)
-      // Gère les deux formats de réponse possibles
       const participations = response.data
       return participations
     } catch (error) {
@@ -114,12 +124,9 @@ const TombolaListing = () => {
 
   // Effet principal pour charger les données
   useEffect(() => {
-    console.log("hello6");
-
     const loadData = async () => {
       setIsLoading(true)
       try {
-        // Chargement en parallèle
         const [tombolasData, participationsData] = await Promise.all([
           fetchTombolas(),
           fetchParticipations()
@@ -127,9 +134,7 @@ const TombolaListing = () => {
 
         setTombolas(tombolasData)
         setUserParticipations(participationsData)
-        console.log("Nos user participation", userParticipations);
 
-        // Vérification des statuts de paiement
         const participantsToCheck = tombolasData
           .flatMap(t => t.participants || [])
           .filter(p => p.order_id && !p.is_payed)
@@ -153,9 +158,6 @@ const TombolaListing = () => {
     loadData()
   }, [fetchTombolas, fetchParticipations, toast])
 
-
-
-
   // Filtrage et tri des tombolas
   const filteredTombolas = tombolas
     .filter(tombola => {
@@ -176,6 +178,13 @@ const TombolaListing = () => {
       if (sortBy === "date") return new Date(a.date_fin) - new Date(b.date_fin)
       return 0
     })
+
+  // Pagination
+  const totalPages = Math.ceil(filteredTombolas.length / itemsPerPage)
+  const paginatedTombolas = filteredTombolas.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
 
   // Gestion du paiement
   const handlePayer = async () => {
@@ -207,7 +216,6 @@ const TombolaListing = () => {
         })
         window.open(paymentResponse.data.link, "_blank")
 
-        // Recharger les participations après paiement
         const updatedParticipations = await fetchParticipations()
         setUserParticipations(updatedParticipations)
       }
@@ -228,11 +236,11 @@ const TombolaListing = () => {
     <Modal isOpen={isCouponOpen} onClose={onCouponClose}>
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Participation à la tombola</ModalHeader>
+        <ModalHeader>Participation à Cagnotte</ModalHeader>
         <ModalCloseButton />
         <ModalBody textAlign="center">
           <Image
-            src="/coupon.png"
+            src={money}
             alt="Coupon de participation"
             mb={4}
             mx="auto"
@@ -282,6 +290,11 @@ const TombolaListing = () => {
               <Text>Fin: {selectedTombola?.date_fin && new Date(selectedTombola.date_fin).toLocaleDateString()}</Text>
             </Flex>
           </HStack>
+          {(isModerateur || isCreator(selectedTombola)) && (
+            <Box mt={4} p={3} bg="blue.50" borderRadius="md">
+              <Text fontWeight="bold">Cagnotte: {selectedTombola?.cagnotte} Fcfa</Text>
+            </Box>
+          )}
         </ModalBody>
         <ModalFooter>
           <Button colorScheme="blue" onClick={onDetailClose}>
@@ -292,174 +305,265 @@ const TombolaListing = () => {
     </Modal>
   )
 
-  // Composant de filtre
+  // Composant de filtre responsive
   const FilterButtons = () => (
-    <HStack spacing={2} mb={6} overflowX="auto" pb={2}>
-      <Button
-        size="sm"
-        variant={filter === "all" ? "solid" : "outline"}
-        onClick={() => setFilter("all")}
-        borderRadius="full"
-        colorScheme="gray"
-      >
-        Toutes
-      </Button>
-      <Button
-        size="sm"
-        variant={filter === "active" ? "solid" : "outline"}
-        onClick={() => setFilter("active")}
-        borderRadius="full"
-        colorScheme="gray"
-      >
-        Actives
-      </Button>
-      <Button
-        size="sm"
-        variant={filter === "participating" ? "solid" : "outline"}
-        onClick={() => setFilter("participating")}
-        borderRadius="full"
-        colorScheme="gray"
-      >
-        Mes participations
-      </Button>
+    <Stack 
+      direction={{ base: "column", md: "row" }} 
+      spacing={4} 
+      mb={6} 
+      align={{ base: "stretch", md: "center" }}
+    >
+      <HStack spacing={2} overflowX="auto" pb={2} flexWrap={{ base: "nowrap", md: "wrap" }}>
+        <Button
+          size="sm"
+          variant={filter === "all" ? "solid" : "outline"}
+          onClick={() => setFilter("all")}
+          borderRadius="full"
+          colorScheme="gray"
+          minW="max-content"
+        >
+          Toutes
+        </Button>
+        <Button
+          size="sm"
+          variant={filter === "active" ? "solid" : "outline"}
+          onClick={() => setFilter("active")}
+          borderRadius="full"
+          colorScheme="gray"
+          minW="max-content"
+        >
+          Actives
+        </Button>
+        {user && (
+          <Button
+            size="sm"
+            variant={filter === "participating" ? "solid" : "outline"}
+            onClick={() => setFilter("participating")}
+            borderRadius="full"
+            colorScheme="gray"
+            minW="max-content"
+          >
+            Mes participations
+          </Button>
+        )}
+      </HStack>
+      
       <Select
         size="sm"
         value={sortBy}
         onChange={(e) => setSortBy(e.target.value)}
         borderRadius="full"
         colorScheme="gray"
-        maxW="150px"
+        maxW={{ base: "100%", md: "200px" }}
       >
-        <option value="participants">Participants</option>
-        <option value="date">Date</option>
+        <option value="participants">Plus populaires</option>
+        <option value="date">Proche de la fin</option>
       </Select>
-    </HStack>
+    </Stack>
   )
 
-  // Composant de carte tombola
-  const TombolaCard = ({
-    tombola,
-    isParticipating,
-    isModerateur,
-    textColor,
-    borderColor,
-    sidebarBg,
-    onDetailClick,
-    onCouponClick,
-    isMobile
-  }) => (
-    <Box
-      p={4}
-      borderWidth="1px"
-      borderRadius="md"
-      borderColor={borderColor}
-      bg={sidebarBg}
-      position="relative"
-      cursor="pointer"
-      onClick={onDetailClick}
-      _hover={{ shadow: "md" }}
-    >
-      {isParticipating && (
-        <Badge colorScheme="green" position="absolute" top={2} right={2}>
-          Vous participez
-        </Badge>
-      )}
+  // Composant de carte tombola amélioré
+  const TombolaCard = ({ tombola }) => {
+    const isParticipating = userParticipations.some(
+      participation => participation.tombola_id === tombola.id && participation.is_payed
+    )
 
-      <Flex justify="space-between" mb={2}>
-        <Heading size="md" color={textColor}>
-          {tombola.titre}
-        </Heading>
-      </Flex>
-
-      <HStack mb={2} spacing={4}>
-        <Flex align="center">
-          <Icon as={FaUsers} mr={1} />
-          <Text fontSize="sm">{tombola.participants_actuel} participants</Text>
-        </Flex>
-        <Flex align="center">
-          <Icon as={FaClock} mr={1} />
-          <Text fontSize="sm">Fin: {new Date(tombola.date_fin).toLocaleDateString()}</Text>
-        </Flex>
-      </HStack>
-
-      <Text noOfLines={2} mb={2} color={textColor}>
-        {tombola.description || "Aucune description..."}
-      </Text>
-
-      {isModerateur && (
-        <HStack mb={4} flexWrap="wrap">
-          <Tag size="sm" variant="subtle" colorScheme="blue">
-            Cagnotte: {tombola.cagnotte} Fcfa
-          </Tag>
-        </HStack>
-      )}
-
-      <HStack spacing={2}>
-        <Button
-          colorScheme="blue"
-          size={isMobile ? "sm" : "md"}
-          onClick={onCouponClick}
-        >
-          Participer
-        </Button>
-      </HStack>
-    </Box>
-  )
-
-  if (isLoading) return <Loading />
-
-
-  return (
-
-    <div>
-
-      <SimpleNavbar />
-      <Container maxW="container.xl" py={8}>
-        <Box bg={headerBg} borderRadius="lg" borderWidth="1px" borderColor={borderColor} p={4}>
-          <Flex justify="space-between" align="center" mb={4}>
-            <Heading size="lg" color={textColor}>
-              Tombolas à découvrir
-            </Heading>
-          </Flex>
-
-          <InputGroup maxW={{ base: "100%", md: "400px" }} my={4}>
-            <InputLeftElement pointerEvents="none">
-              <FiSearch color="gray.300" />
-            </InputLeftElement>
-            <Input
-              placeholder="Rechercher une tombola..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+    return (
+      <Box
+        borderWidth="1px"
+        borderRadius="lg"
+        borderColor={borderColor}
+        bg={cardBg}
+        overflow="hidden"
+        maxW="800px"
+        mx="auto"
+        w="100%"
+        _hover={{ shadow: "md", transform: "translateY(-2px)", transition: "all 0.2s" }}
+      >
+        <Flex direction={{ base: "column", md: "row" }}>
+          <AspectRatio ratio={4/4} minW={{ base: "100%", md: "250px" }} maxW={{ md: "300px" }}>
+            <Image
+              src={tombola.photo || DEFAULT_TOMBOLA_IMAGE}
+              alt={tombola.titre}
+              objectFit="cover"
+              fallbackSrc={DEFAULT_TOMBOLA_IMAGE}
             />
-          </InputGroup>
+          </AspectRatio>
 
-          <FilterButtons />
+          <Box p={4} flex={1}>
+            <Flex justify="space-between" align="flex-start" mb={2}>
+              <Heading size="md" color={textColor}>
+                {tombola.titre}
+              </Heading>
+              {isParticipating && (
+                <Badge colorScheme="green" ml={2}>
+                  Vous participez
+                </Badge>
+              )}
+            </Flex>
 
-          <VStack spacing={4} align="stretch">
-            {filteredTombolas.map(tombola => {
-              const participation = userParticipations.filter((participation) => participation.tombola_id == tombola.id)[0]
-              console.log("part:", participation);
+            <Text noOfLines={2} mb={3} color={textColor}>
+              {tombola.description || "Aucune description..."}
+            </Text>
 
-              { participation && checkPaymentStatus(participation) }
+            <Divider my={2} />
 
-              return (<TombolaCard
-                key={tombola.id}
-                tombola={tombola}
-                isParticipating={userParticipations.some(participation => (participation.tombola_id === tombola.id && participation.is_payed))}
-                isModerateur={isModerateur}
-                textColor={textColor}
-                borderColor={borderColor}
-                sidebarBg={sidebarBg}
-                onDetailClick={() => setSelectedTombola(tombola)}
-                onCouponClick={(e) => {
+            <Flex justify="space-between" align="center" flexWrap="wrap">
+              <HStack spacing={4}>
+                <Flex align="center">
+                  <Icon as={FaUsers} mr={1} />
+                  <Text fontSize="sm">{tombola.participants_actuel} participants</Text>
+                </Flex>
+                <Flex align="center">
+                  <Icon as={FaClock} mr={1} />
+                  <Text fontSize="sm">Fin: {new Date(tombola.date_fin).toLocaleDateString()}</Text>
+                </Flex>
+              </HStack>
+
+              {(isModerateur || isCreator(tombola)) && (
+                <Tag size="sm" variant="subtle" colorScheme="blue" mt={{ base: 2, md: 0 }}>
+                  Cagnotte: {tombola.cagnotte} Fcfa
+                </Tag>
+              )}
+            </Flex>
+
+            <Flex justify="flex-end" mt={4}>
+              <Button
+                size="sm"
+                colorScheme="blue"
+                onClick={(e) => {
                   e.stopPropagation()
                   setSelectedTombola(tombola)
                   onCouponOpen()
                 }}
-                isMobile={isMobile}
-              />)
+              >
+                Participer
+              </Button>
+            </Flex>
+          </Box>
+        </Flex>
+      </Box>
+    )
+  }
 
-            })}
+  if (isLoading) return <Loading />
+
+  return (
+    <Box bg={bgColor} 
+    
+    
+    >
+      <SimpleNavbar />
+      <Box
+      h={banSize}
+      >
+        {/* <Box
+        bgImage={banImage}
+        h="full"
+        w="full"
+        bgPosition="center"
+        bgSize="cover"
+        >
+g
+        </Box> */}
+        <Image src={banImage}  w="full" h="full" />
+      </Box>
+      <Container maxW="container.xl" py={8} minH="100vh">
+        <Box bg={headerBg} borderRadius="lg" borderWidth="1px" borderColor={borderColor} p={6}>
+          <Flex justify="space-between" align="center" mb={6} flexWrap="wrap">
+            <Heading size="lg" color={textColor} mb={{ base: 4, md: 0 }}>
+              Cagnotte à découvrir
+            </Heading>
+            
+            <InputGroup maxW={{ base: "100%", md: "400px" }}>
+              <InputLeftElement pointerEvents="none">
+                <FiSearch color="gray.300" />
+              </InputLeftElement>
+              <Input
+                placeholder="Rechercher une tombola..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </InputGroup>
+          </Flex>
+
+          <FilterButtons />
+
+          <VStack spacing={6} align="stretch">
+            {paginatedTombolas.length > 0 ? (
+              <>
+                {paginatedTombolas.map(tombola => {
+                  const participation = userParticipations.filter(
+                    (participation) => participation.tombola_id == tombola.id
+                  )[0]
+                  
+                  if (participation) checkPaymentStatus(participation)
+
+                  return (
+                    <Box 
+                      key={tombola.id} 
+                      onClick={() => {
+                        setSelectedTombola(tombola)
+                        onDetailOpen()
+                      }}
+                      cursor="pointer"
+                    >
+                      <TombolaCard tombola={tombola} />
+                    </Box>
+                  )
+                })}
+
+                {totalPages > 1 && (
+                  <Flex justify="center" mt={6}>
+                    <HStack spacing={2}>
+                      <Button
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        isDisabled={currentPage === 1}
+                        size="sm"
+                      >
+                        Précédent
+                      </Button>
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum
+                        if (totalPages <= 5) {
+                          pageNum = i + 1
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i
+                        } else {
+                          pageNum = currentPage - 2 + i
+                        }
+                        
+                        return (
+                          <Button
+                            key={pageNum}
+                            onClick={() => setCurrentPage(pageNum)}
+                            colorScheme={currentPage === pageNum ? "blue" : "gray"}
+                            size="sm"
+                          >
+                            {pageNum}
+                          </Button>
+                        )
+                      })}
+                      <Button
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        isDisabled={currentPage === totalPages}
+                        size="sm"
+                      >
+                        Suivant
+                      </Button>
+                    </HStack>
+                  </Flex>
+                )}
+              </>
+            ) : (
+              <Box textAlign="center" py={10}>
+                <Text fontSize="lg" color="gray.500">
+                  Aucune tombola trouvée
+                </Text>
+              </Box>
+            )}
           </VStack>
         </Box>
       </Container>
@@ -467,7 +571,7 @@ const TombolaListing = () => {
 
       <CouponModal />
       <DetailModal />
-    </div>
+    </Box>
   )
 }
 
