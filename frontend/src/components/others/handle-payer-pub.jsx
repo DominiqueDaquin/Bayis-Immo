@@ -23,7 +23,8 @@ import { baseUrlFrontend } from "@/config";
           order_id:order_id
         })
         if(orderResponse.status==200){
-        window.open(response.data.link, "_blank")
+        //window.open(response.data.link, "_blank")
+        window.location.href = response.data.link;
         }
       }
     } catch (err) {

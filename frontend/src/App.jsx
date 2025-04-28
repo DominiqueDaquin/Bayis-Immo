@@ -18,6 +18,7 @@ import PageRemerciementPaiement from './components/pages/remerciements';
 import Page404 from './components/pages/page404';
 import ErrorBoundary from './components/dashboard/error-boundary';
 import PageEchecPaiement from './components/pages/echecs';
+import ResetPasswordConfirm from './components/pages/ResetPasswordConfirm';
 function App() {
     return (
         <AuthProvider>
@@ -41,6 +42,7 @@ function App() {
                     <Route path="/merci" element={<PageRemerciementPaiement />} />
                     <Route path="/echec" element={<PageEchecPaiement/>}/>
                     <Route path="*" element={<Page404 />} />
+                    <Route path="/reset-password" element={<ResetPasswordConfirm />} />
 
 
                     {/* Routes protégées */}
