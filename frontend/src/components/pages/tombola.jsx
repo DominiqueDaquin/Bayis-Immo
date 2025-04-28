@@ -63,6 +63,7 @@ const TombolaListing = () => {
   const [searchQuery, setSearchQuery] = useState("")
   const [sortBy, setSortBy] = useState("participants")
   const [isLoading, setIsLoading] = useState(true)
+  const [btnLoading, setbtnLoading] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 6
 
@@ -87,7 +88,7 @@ const TombolaListing = () => {
         const response = await axiosInstance.post("/api/paiement/lygos/status/", {
           order_id: participant.order_id
         })
-        const is_payed=response.data.status=="success" ? true:false
+        const is_payed = response.data.status == "success" ? true : false
         await axiosInstance.patch(`/api/user-tombolas/${participant.id}/`, {
           statut: response.data.status,
           is_payed: is_payed
@@ -188,8 +189,9 @@ const TombolaListing = () => {
 
   // Gestion du paiement
   const handlePayer = async () => {
-    const order_id = uuidv4()
-    const link = `${baseUrlFrontend}/merci`
+    setbtnLoading(true)
+    const order_id = uuidv4();
+    const link = `${baseUrlFrontend}/merci`;
 
     try {
       const paymentResponse = await axiosInstance.post("/api/paiement/lygos/", {
@@ -198,14 +200,35 @@ const TombolaListing = () => {
         message: `Participation à: ${selectedTombola.titre}`,
         order_id: order_id,
         success_url: link,
-      })
+      });
 
       if (paymentResponse.status === 200) {
-        await axiosInstance.post(`/api/user-tombolas/`, {
-          user: user.id,
-          order_id: order_id,
-          tombola: selectedTombola.id
-        })
+        try {
+          // Essayer de créer une participation
+          await axiosInstance.post(`/api/user-tombolas/`, {
+            user: user.id,
+            order_id: order_id,
+            tombola: selectedTombola.id,
+          });
+        } catch (error) {
+          if (error.response && error.response.status === 400) {
+            console.log("Participation existe déjà, mise à jour de l'order_id...");
+
+            // 1. Chercher la participation existante
+            const participationsResponse = await axiosInstance.get(`/api/user-tombolas/?user=${user.id}&tombola=${selectedTombola.id}`);
+
+            if (participationsResponse.data.length > 0) {
+              const existingParticipation = participationsResponse.data[0];
+
+              // 2. Faire un PATCH pour modifier seulement l'order_id
+              await axiosInstance.patch(`/api/user-tombolas/${existingParticipation.id}/`, {
+                order_id: order_id,
+              });
+            }
+          } else {
+            throw error; // propager l'erreur si ce n'est pas une erreur 400
+          }
+        }
 
         toast({
           title: "Paiement initié",
@@ -213,23 +236,25 @@ const TombolaListing = () => {
           status: "success",
           duration: 3000,
           isClosable: true,
-        })
-        window.open(paymentResponse.data.link, "_blank")
+        });
+        window.open(paymentResponse.data.link, "_blank");
 
-        const updatedParticipations = await fetchParticipations()
-        setUserParticipations(updatedParticipations)
+        const updatedParticipations = await fetchParticipations();
+        setUserParticipations(updatedParticipations);
       }
     } catch (error) {
-      console.error(error)
+      console.error(error);
       toast({
         title: "Erreur",
         description: "Erreur lors du paiement",
         status: "error",
         duration: 3000,
         isClosable: true,
-      })
+      });
     }
-  }
+    setbtnLoading(false)
+  };
+
 
   // Composants modaux
   const CouponModal = () => (
@@ -251,7 +276,7 @@ const TombolaListing = () => {
           </Text>
         </ModalBody>
         <ModalFooter>
-          <Button colorScheme="blue" mr={3} onClick={handlePayer}>
+          <Button colorScheme="blue" mr={3} onClick={handlePayer} isLoading={btnLoading} loadingText="patienter un moment..." >
             Payer 250 Fcfa
           </Button>
           <Button variant="ghost" onClick={onCouponClose}>
@@ -307,10 +332,10 @@ const TombolaListing = () => {
 
   // Composant de filtre responsive
   const FilterButtons = () => (
-    <Stack 
-      direction={{ base: "column", md: "row" }} 
-      spacing={4} 
-      mb={6} 
+    <Stack
+      direction={{ base: "column", md: "row" }}
+      spacing={4}
+      mb={6}
       align={{ base: "stretch", md: "center" }}
     >
       <HStack spacing={2} overflowX="auto" pb={2} flexWrap={{ base: "nowrap", md: "wrap" }}>
@@ -347,7 +372,7 @@ const TombolaListing = () => {
           </Button>
         )}
       </HStack>
-      
+
       <Select
         size="sm"
         value={sortBy}
@@ -381,7 +406,7 @@ const TombolaListing = () => {
         _hover={{ shadow: "md", transform: "translateY(-2px)", transition: "all 0.2s" }}
       >
         <Flex direction={{ base: "column", md: "row" }}>
-          <AspectRatio ratio={4/4} minW={{ base: "100%", md: "250px" }} maxW={{ md: "300px" }}>
+          <AspectRatio ratio={4 / 4} minW={{ base: "100%", md: "250px" }} maxW={{ md: "300px" }}>
             <Image
               src={tombola.photo || DEFAULT_TOMBOLA_IMAGE}
               alt={tombola.titre}
@@ -449,13 +474,13 @@ const TombolaListing = () => {
   if (isLoading) return <Loading />
 
   return (
-    <Box bg={bgColor} 
-    
-    
+    <Box bg={bgColor}
+
+
     >
       <SimpleNavbar />
       <Box
-      h={banSize}
+        h={banSize}
       >
         {/* <Box
         bgImage={banImage}
@@ -466,7 +491,7 @@ const TombolaListing = () => {
         >
 g
         </Box> */}
-        <Image src={banImage}  w="full" h="full" />
+        <Image src={banImage} w="full" h="full" />
       </Box>
       <Container maxW="container.xl" py={8} minH="100vh">
         <Box bg={headerBg} borderRadius="lg" borderWidth="1px" borderColor={borderColor} p={6}>
@@ -474,7 +499,7 @@ g
             <Heading size="lg" color={textColor} mb={{ base: 4, md: 0 }}>
               Cagnotte à découvrir
             </Heading>
-            
+
             <InputGroup maxW={{ base: "100%", md: "400px" }}>
               <InputLeftElement pointerEvents="none">
                 <FiSearch color="gray.300" />
@@ -496,12 +521,12 @@ g
                   const participation = userParticipations.filter(
                     (participation) => participation.tombola_id == tombola.id
                   )[0]
-                  
+
                   if (participation) checkPaymentStatus(participation)
 
                   return (
-                    <Box 
-                      key={tombola.id} 
+                    <Box
+                      key={tombola.id}
                       onClick={() => {
                         setSelectedTombola(tombola)
                         onDetailOpen()
@@ -534,7 +559,7 @@ g
                         } else {
                           pageNum = currentPage - 2 + i
                         }
-                        
+
                         return (
                           <Button
                             key={pageNum}

@@ -74,6 +74,7 @@ export default function Annonce({ isModerateur }) {
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure()
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure()
   const [selectedProperty, setSelectedProperty] = useState(null)
+  const [btnLoading, setbtnLoading] = useState(false)
   const [properties, setProperties] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
@@ -161,6 +162,7 @@ export default function Annonce({ isModerateur }) {
   }
 
   const handleCreateSubmit = async (formData) => {
+    setbtnLoading(true)
     console.log("Données recues:", formData);
 
     try {
@@ -196,6 +198,7 @@ export default function Annonce({ isModerateur }) {
       )
       console.error("Erreur lors de la création de l'annonce:", error)
     }
+    setbtnLoading(false)
   }
 
   const handleEditSubmit = async (formData) => {
@@ -583,7 +586,7 @@ export default function Annonce({ isModerateur }) {
             <ModalHeader>Créer une nouvelle annonce</ModalHeader>
             <ModalCloseButton />
             <ModalBody>
-              <PropertyForm onSubmit={handleCreateSubmit} onCancel={onCreateClose} />
+              <PropertyForm onSubmit={handleCreateSubmit} onCancel={onCreateClose} isLoading={btnLoading} />
             </ModalBody>
           </ModalContent>
         </Modal>

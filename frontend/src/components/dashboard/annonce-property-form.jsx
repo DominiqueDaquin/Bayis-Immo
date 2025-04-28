@@ -23,17 +23,18 @@ import {
 } from "@chakra-ui/react"
 import { FiUpload, FiX } from "react-icons/fi"
 
-const PropertyForm = ({ property, onSubmit, onCancel }) => {
+const PropertyForm = ({ property, onSubmit, onCancel,isLoading }) => {
   const [formData, setFormData] = useState(
     property || {
       titre: "",
       description: "",
       prix: "",
       localisation: "",
-      status: "p", 
-      photos_upload: [] 
+      status: "p",
+      photos_upload: []
     }
   )
+  
   const [uploadedImages, setUploadedImages] = useState(property?.photos_upload || [])
   const toast = useToast()
   const handleChange = (e) => {
@@ -43,7 +44,7 @@ const PropertyForm = ({ property, onSubmit, onCancel }) => {
 
   const handleImageUpload = (e) => {
     const files = Array.from(e.target.files)
-    if(files.length>6){
+    if (files.length > 6) {
       toast({
         title: "Fichiers trop nombreux",
         description: `Nous sommes désolé mais votre annonce ne peut contenir plus de 6 photos`,
@@ -66,7 +67,7 @@ const PropertyForm = ({ property, onSubmit, onCancel }) => {
           })
           return false
         }
-        
+
         if (file.size > 5 * 1024 * 1024) { // 5MB max
           toast({
             title: "Fichier trop volumineux",
@@ -77,14 +78,14 @@ const PropertyForm = ({ property, onSubmit, onCancel }) => {
           })
           return false
         }
-        
+
         return true
       })
 
-      
+
       // Création des URLs pour la prévisualisation
       const newPreviews = validFiles.map(file => URL.createObjectURL(file))
-      
+
       setUploadedImages(prev => [...prev, ...newPreviews])
       setFormData(prev => ({
         ...prev,
@@ -98,11 +99,11 @@ const PropertyForm = ({ property, onSubmit, onCancel }) => {
     const newPreviews = [...uploadedImages]
     URL.revokeObjectURL(newPreviews[index]) // Libère la mémoire
     newPreviews.splice(index, 1)
-    
+
     // Supprime le fichier correspondant
     const newFiles = [...formData.photos_upload]
     newFiles.splice(index, 1)
-    
+
     setUploadedImages(newPreviews)
     setFormData(prev => ({
       ...prev,
@@ -112,37 +113,38 @@ const PropertyForm = ({ property, onSubmit, onCancel }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-  
+
     // Vérification des champs
     if (!formData.titre || !formData.description || !formData.localisation) {
       toast({ title: "Champs manquants", status: "error" })
       return
     }
-  
+
     // 1. Construction du FormData
     const formDataToSend = new FormData()
-    
+
     // 2. Ajout des champs texte
     formDataToSend.append("titre", formData.titre)
     formDataToSend.append("description", formData.description)
     formDataToSend.append("prix", formData.prix)
     formDataToSend.append("localisation", formData.localisation)
     formDataToSend.append("status", formData.status)
-  
+
     // 3. Ajout des images (format adapté à Django)
     formData.photos_upload.forEach(file => {
       formDataToSend.append("photos_upload", file)
     })
-  const my_data={}
+    const my_data = {}
 
     for (let [key, value] of formDataToSend.entries()) {
-      
-      my_data[key]=value
+
+      my_data[key] = value
     }
     console.log(my_data);
-    
 
-    onSubmit(my_data) 
+   
+
+    onSubmit(my_data)
   }
 
   return (
@@ -151,11 +153,11 @@ const PropertyForm = ({ property, onSubmit, onCancel }) => {
         {/* Section Upload d'images */}
         <FormControl>
           <FormLabel>Images de l'annonce (max 6)</FormLabel>
-          <Box 
-            border="2px dashed" 
-            borderColor="gray.200" 
-            borderRadius="md" 
-            p={4} 
+          <Box
+            border="2px dashed"
+            borderColor="gray.200"
+            borderRadius="md"
+            p={4}
             textAlign="center"
             _hover={{ borderColor: "blue.300" }}
           >
@@ -172,8 +174,8 @@ const PropertyForm = ({ property, onSubmit, onCancel }) => {
                 isDisabled={uploadedImages.length >= 10}
               />
               <Text mt={2} fontSize="sm" color="gray.500">
-                {uploadedImages.length >= 6 
-                  ? "Nombre maximum d'images atteint" 
+                {uploadedImages.length >= 6
+                  ? "Nombre maximum d'images atteint"
                   : "Glissez-déposez ou cliquez pour télécharger des images (JPEG, PNG, max 5MB)"}
               </Text>
               <Input
@@ -187,17 +189,17 @@ const PropertyForm = ({ property, onSubmit, onCancel }) => {
               />
             </Flex>
           </Box>
-          
+
           {/* Prévisualisation des images */}
           {uploadedImages.length > 0 && (
             <Flex wrap="wrap" mt={4} gap={2}>
               {uploadedImages.map((image, index) => (
                 <Box key={index} position="relative">
-                  <Image 
-                    src={typeof image === 'string' ? image : URL.createObjectURL(image)} 
-                    alt={`Preview ${index}`} 
-                    boxSize="100px" 
-                    objectFit="cover" 
+                  <Image
+                    src={typeof image === 'string' ? image : URL.createObjectURL(image)}
+                    alt={`Preview ${index}`}
+                    boxSize="100px"
+                    objectFit="cover"
                     borderRadius="md"
                   />
                   <IconButton
@@ -276,10 +278,11 @@ const PropertyForm = ({ property, onSubmit, onCancel }) => {
           <Button onClick={onCancel} variant="outline">
             Annuler
           </Button>
-          <Button 
-            colorScheme="blue" 
+          <Button
+            colorScheme="blue"
             type="submit"
-            isLoading={false} // Vous pouvez ajouter un état de chargement ici
+            isLoading={isLoading} // Vous pouvez ajouter un état de chargement ici
+            loadingText="Opération en cours..."
           >
             {property ? "Mettre à jour" : "Créer l'annonce"}
           </Button>
