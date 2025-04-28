@@ -183,13 +183,14 @@ DJOSER={
         'user': 'authentification.serializers.UserSerializer',
         'user_update': 'authentification.serializers.UserUpdateSerializer',
     },
-    'PASSWORD_RESET_CONFIRM_URL': 'password/reset/confirm/{uid}/{token}',
+    'PASSWORD_RESET_CONFIRM_URL': 'reset-password?uid={uid}&token={token}',
     'USERNAME_RESET_CONFIRM_URL': 'username/reset/confirm/{uid}/{token}',
     'ACTIVATION_URL': 'activate/{uid}/{token}',
+    'DOMAIN': os.getenv("DOMAIN","bayisimmob.com"),
     'PERMISSIONS': {
         'user_list': ['rest_framework.permissions.IsAdminUser'],  # Modifier si nécessaire
         'user': ['rest_framework.permissions.IsAuthenticated'],
-    }
+    },
 }
 
 SIMPLE_JWT={
