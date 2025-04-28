@@ -667,6 +667,7 @@ class UserTombalaView(viewsets.ModelViewSet):
     queryset = UserTombola.objects.all()
     serializer_class = UserTombolaSerializer
     permission_classes = [IsAuthenticated]  
+    filterset_fields = ['user', 'tombola']  
 
     def get_queryset(self):
         user = self.request.user
