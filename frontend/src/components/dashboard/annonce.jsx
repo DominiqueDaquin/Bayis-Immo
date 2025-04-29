@@ -240,15 +240,38 @@ export default function Annonce({ isModerateur }) {
 
   const handleEditSubmit = async (formData) => {
     try {
-      const response = await axiosInstance.patch(`/api/annonces/${selectedProperty.id}/`, formData)
+      const response = await axiosInstance.patch(
+        `/api/annonces/${selectedProperty.id}/`, 
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      )
+  
       const updatedProperty = response.data
       const updatedProperties = properties.map((prop) =>
-        prop.id === updatedProperty.id ? updatedProperty : prop,
+        prop.id === updatedProperty.id ? updatedProperty : prop
       )
+      
       setProperties(updatedProperties)
       onEditClose()
+      toast({
+        title: "Annonce mise à jour",
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      })
     } catch (error) {
-      console.error("Erreur lors de la modification de l'annonce:", error)
+      toast({
+        title: "Erreur lors de la modification",
+        description: error.response?.data?.message || "Impossible de mettre à jour l'annonce",
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+      })
+      console.error("Erreur modification annonce:", error)
     }
   }
 
