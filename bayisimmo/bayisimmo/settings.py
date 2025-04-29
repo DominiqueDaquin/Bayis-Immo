@@ -250,35 +250,35 @@ EMAIL_HOST_USER = os.getenv('EMAIL')
 EMAIL_HOST_PASSWORD = os.getenv('PASSWORD')  
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER  
 
-STORAGES = {
-    "default": {  # Pour les fichiers média (FileField, ImageField)
-        "BACKEND": "storages.backends.s3.S3Storage",
-        "OPTIONS": {
-            "access_key": os.getenv('AWS_ACCESS_KEY_ID'),
-            "secret_key": os.getenv('AWS_SECRET_ACCESS_KEY'),
-            "bucket_name": os.getenv('AWS_STORAGE_BUCKET_NAME'),
-            "region_name": os.getenv('AWS_S3_REGION_NAME'),
-            "default_acl": "public-read",
-            "file_overwrite": False,
-            "location": "media",
-            "querystring_auth": False,
-            "custom_domain": f"{os.getenv('AWS_STORAGE_BUCKET_NAME')}.s3.amazonaws.com",
-        },
-    },
-    "staticfiles": {  # Pour les fichiers statiques (collectstatic)
-        "BACKEND": "storages.backends.s3.S3Storage",
-        "OPTIONS": {
-            "access_key": os.getenv('AWS_ACCESS_KEY_ID'),
-            "secret_key": os.getenv('AWS_SECRET_ACCESS_KEY'),
-            "bucket_name": os.getenv('AWS_STORAGE_BUCKET_NAME'),
-            "region_name": os.getenv('AWS_S3_REGION_NAME'),
-            "default_acl": "public-read",
-            "location": "static",
-            "querystring_auth": False,
-            "custom_domain": f"{os.getenv('AWS_STORAGE_BUCKET_NAME')}.s3.amazonaws.com",
-        },
-    },
-}
+# STORAGES = {
+#     "default": {  # Pour les fichiers média (FileField, ImageField)
+#         "BACKEND": "storages.backends.s3.S3Storage",
+#         "OPTIONS": {
+#             "access_key": os.getenv('AWS_ACCESS_KEY_ID'),
+#             "secret_key": os.getenv('AWS_SECRET_ACCESS_KEY'),
+#             "bucket_name": os.getenv('AWS_STORAGE_BUCKET_NAME'),
+#             "region_name": os.getenv('AWS_S3_REGION_NAME'),
+#             "default_acl": "public-read",
+#             "file_overwrite": False,
+#             "location": "media",
+#             "querystring_auth": False,
+#             "custom_domain": f"{os.getenv('AWS_STORAGE_BUCKET_NAME')}.s3.amazonaws.com",
+#         },
+#     },
+#     "staticfiles": {  # Pour les fichiers statiques (collectstatic)
+#         "BACKEND": "storages.backends.s3.S3Storage",
+#         "OPTIONS": {
+#             "access_key": os.getenv('AWS_ACCESS_KEY_ID'),
+#             "secret_key": os.getenv('AWS_SECRET_ACCESS_KEY'),
+#             "bucket_name": os.getenv('AWS_STORAGE_BUCKET_NAME'),
+#             "region_name": os.getenv('AWS_S3_REGION_NAME'),
+#             "default_acl": "public-read",
+#             "location": "static",
+#             "querystring_auth": False,
+#             "custom_domain": f"{os.getenv('AWS_STORAGE_BUCKET_NAME')}.s3.amazonaws.com",
+#         },
+#     },
+# }
 
 
 if DEBUG:
