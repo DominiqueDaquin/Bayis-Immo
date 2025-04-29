@@ -161,44 +161,81 @@ export default function Annonce({ isModerateur }) {
     onDeleteOpen()
   }
 
+  // const handleCreateSubmit = async (formData) => {
+  //   setbtnLoading(true)
+  //   console.log("Données recues:", formData);
+
+  //   try {
+  //     const response = await axiosInstance.post("/api/annonces/", { ...formData, creer_par: user.id },
+  //       {
+  //         headers: {
+  //           'Content-Type': 'multipart/form-data',
+  //         },
+  //       }
+  //     )
+
+  //     const newProperty = response.data
+  //     setProperties([newProperty,...properties])
+  //     onCreateClose()
+  //     toast(
+  //       {
+  //         title: "Annonce Creer a success",
+  //         status: "success",
+  //         duration: 5000,
+  //         isClosable: true
+  //       }
+  //     )
+  //   } catch (error) {
+
+  //     toast(
+  //       {
+  //         title: "Erreur lors de la creation de l'annonce",
+  //         description: error.response?.data?.prix || "impossible de creer cette annonce, veuillez reessayez",
+  //         status: "error",
+  //         duration: 5000,
+  //         isClosable: true
+  //       }
+  //     )
+  //     console.error("Erreur lors de la création de l'annonce:", error)
+  //   }
+  //   setbtnLoading(false)
+  // }
+
+
   const handleCreateSubmit = async (formData) => {
     setbtnLoading(true)
-    console.log("Données recues:", formData);
-
+    
     try {
-      const response = await axiosInstance.post("/api/annonces/", { ...formData, creer_par: user.id },
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      )
-
+      // Ajoutez l'utilisateur au FormData
+      formData.append("creer_par", user.id)
+  
+      const response = await axiosInstance.post("/api/annonces/", formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+  
       const newProperty = response.data
-      setProperties([newProperty,...properties])
+      setProperties([newProperty, ...properties])
       onCreateClose()
-      toast(
-        {
-          title: "Annonce Creer a success",
-          status: "success",
-          duration: 5000,
-          isClosable: true
-        }
-      )
+      toast({
+        title: "Annonce Créée avec succès",
+        status: "success",
+        duration: 5000,
+        isClosable: true
+      })
     } catch (error) {
-
-      toast(
-        {
-          title: "Erreur lors de la creation de l'annonce",
-          description: error.response?.data?.prix || "impossible de creer cette annonce, veuillez reessayez",
-          status: "error",
-          duration: 5000,
-          isClosable: true
-        }
-      )
+      toast({
+        title: "Erreur lors de la création de l'annonce",
+        description: error.response?.data?.message || "Impossible de créer cette annonce, veuillez réessayer",
+        status: "error",
+        duration: 5000,
+        isClosable: true
+      })
       console.error("Erreur lors de la création de l'annonce:", error)
+    } finally {
+      setbtnLoading(false)
     }
-    setbtnLoading(false)
   }
 
   const handleEditSubmit = async (formData) => {

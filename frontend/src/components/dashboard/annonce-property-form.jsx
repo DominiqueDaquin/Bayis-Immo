@@ -111,42 +111,71 @@ const PropertyForm = ({ property, onSubmit, onCancel,isLoading }) => {
     }))
   }
 
+  // const handleSubmit = (e) => {
+  //   e.preventDefault()
+
+  //   // Vérification des champs
+  //   if (!formData.titre || !formData.description || !formData.localisation) {
+  //     toast({ title: "Champs manquants", status: "error" })
+  //     return
+  //   }
+
+  //   // 1. Construction du FormData
+  //   const formDataToSend = new FormData()
+
+  //   // 2. Ajout des champs texte
+  //   formDataToSend.append("titre", formData.titre)
+  //   formDataToSend.append("description", formData.description)
+  //   formDataToSend.append("prix", formData.prix)
+  //   formDataToSend.append("localisation", formData.localisation)
+  //   formDataToSend.append("status", formData.status)
+
+  //   // 3. Ajout des images (format adapté à Django)
+  //   formData.photos_upload.forEach(file => {
+  //     formDataToSend.append("photos_upload", file)
+  //   })
+  //   const my_data = {}
+
+  //   for (let [key, value] of formDataToSend.entries()) {
+
+  //     my_data[key] = value
+  //   }
+  //   console.log(my_data);
+
+   
+
+  //   onSubmit(my_data)
+  // }
   const handleSubmit = (e) => {
     e.preventDefault()
-
+  
     // Vérification des champs
     if (!formData.titre || !formData.description || !formData.localisation) {
       toast({ title: "Champs manquants", status: "error" })
       return
     }
-
+  
     // 1. Construction du FormData
     const formDataToSend = new FormData()
-
+  
     // 2. Ajout des champs texte
     formDataToSend.append("titre", formData.titre)
     formDataToSend.append("description", formData.description)
     formDataToSend.append("prix", formData.prix)
     formDataToSend.append("localisation", formData.localisation)
     formDataToSend.append("status", formData.status)
-
+  
     // 3. Ajout des images (format adapté à Django)
-    formData.photos_upload.forEach(file => {
-      formDataToSend.append("photos_upload", file)
-    })
-    const my_data = {}
-
-    for (let [key, value] of formDataToSend.entries()) {
-
-      my_data[key] = value
+    // Vérifiez d'abord que photos_upload est un tableau
+    if (Array.isArray(formData.photos_upload)) {
+      formData.photos_upload.forEach(file => {
+        formDataToSend.append("photos_upload", file)
+      })
     }
-    console.log(my_data);
-
-   
-
-    onSubmit(my_data)
+  
+    // Envoyez directement le FormData sans conversion
+    onSubmit(formDataToSend)
   }
-
   return (
     <form onSubmit={handleSubmit}>
       <VStack spacing={6} align="stretch">

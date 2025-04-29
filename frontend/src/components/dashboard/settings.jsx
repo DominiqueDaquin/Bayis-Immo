@@ -24,6 +24,13 @@ import {
   useColorMode,
   useColorModeValue,
   Flex,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
 } from '@chakra-ui/react';
 import {
   CheckIcon,
@@ -34,6 +41,7 @@ import {
 } from '@chakra-ui/icons';
 import axiosInstance from '@/api/axios'; 
 import { useAuth } from '@/hooks/useAuth'; 
+
 // Composant Section Paramètres réutilisable
 const SettingsSection = ({ icon, title, children }) => (
   <Card 
@@ -87,6 +95,13 @@ export default function Settings() {
       email: '',
       phone: ''
     });
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+    const [passwordData, setPasswordData] = useState({
+      current_password: '',
+      new_password: '',
+      re_new_password: ''
+    });
+    const [isPasswordLoading, setIsPasswordLoading] = useState(false);
     const fileInputRef = useRef(null);
     const toast = useToast();
     const { colorMode, toggleColorMode } = useColorMode();
@@ -148,6 +163,39 @@ export default function Settings() {
           "error",
           error.response?.data?.detail
         );
+      }
+    };
+
+    const handlePasswordChange = async () => {
+      setIsPasswordLoading(true);
+      
+      try {
+        await axiosInstance.post('/auth/users/set_password/', passwordData);
+        
+        showToast("Mot de passe modifié avec succès", "success");
+        setIsPasswordModalOpen(false);
+        setPasswordData({
+          current_password: '',
+          new_password: '',
+          re_new_password: ''
+        });
+      } catch (error) {
+        let errorMessage = "Erreur lors du changement de mot de passe";
+        
+        if (error.response?.data) {
+          // Gestion des erreurs spécifiques de Djoser
+          if (error.response.data.current_password) {
+            errorMessage = "Mot de passe actuel incorrect";
+          } else if (error.response.data.new_password) {
+            errorMessage = error.response.data.new_password.join(' ');
+          } else if (error.response.data.non_field_errors) {
+            errorMessage = error.response.data.non_field_errors.join(' ');
+          }
+        }
+        
+        showToast(errorMessage, "error");
+      } finally {
+        setIsPasswordLoading(false);
       }
     };
   
@@ -276,25 +324,6 @@ export default function Settings() {
                   />
                 }
               />
-              
-              {/* <SettingItem
-                label="Langue"
-                description="Sélectionnez votre langue préférée"
-                control={
-                  <Select 
-                    width="100%" 
-                    maxW={["100%", "200px"]} 
-                    defaultValue="fr"
-                    size={["md", "lg"]}
-                  >
-                    <option value="fr">Français</option>
-                    <option value="en">English</option>
-                    <option value="es">Español</option>
-                  </Select>
-                }
-              /> */}
-              
-           
             </VStack>
           </SettingsSection>
 
@@ -308,36 +337,69 @@ export default function Settings() {
                   <Button 
                     variant="outline" 
                     size={["sm", "md"]}
+                    onClick={() => setIsPasswordModalOpen(true)}
                   >
                     Modifier
                   </Button>
                 }
               />
-              
-              {/* <SettingItem
-                label="Authentification à deux facteurs"
-                description="Ajouter une couche de sécurité supplémentaire"
-                control={
-                  <Switch size={["md", "lg"]} />
-                }
-              /> */}
-              
-              {/* <SettingItem
-                label="Sessions actives"
-                description="Gérer vos appareils connectés"
-                control={
-                  <Button 
-                    variant="outline" 
-                    size={["sm", "md"]}
-                  >
-                    Voir
-                  </Button>
-                }
-              /> */}
             </VStack>
           </SettingsSection>
         </VStack>
-        
+
+        {/* Modal de changement de mot de passe */}
+        <Modal isOpen={isPasswordModalOpen} onClose={() => setIsPasswordModalOpen(false)}>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Changer le mot de passe</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody pb={6}>
+              <VStack spacing={4}>
+                <FormControl isRequired>
+                  <FormLabel>Mot de passe actuel</FormLabel>
+                  <Input
+                    type="password"
+                    value={passwordData.current_password}
+                    onChange={(e) => setPasswordData({...passwordData, current_password: e.target.value})}
+                    placeholder="Entrez votre mot de passe actuel"
+                  />
+                </FormControl>
+
+                <FormControl isRequired>
+                  <FormLabel>Nouveau mot de passe</FormLabel>
+                  <Input
+                    type="password"
+                    value={passwordData.new_password}
+                    onChange={(e) => setPasswordData({...passwordData, new_password: e.target.value})}
+                    placeholder="Entrez votre nouveau mot de passe"
+                  />
+                </FormControl>
+
+                <FormControl isRequired>
+                  <FormLabel>Confirmer le nouveau mot de passe</FormLabel>
+                  <Input
+                    type="password"
+                    value={passwordData.re_new_password}
+                    onChange={(e) => setPasswordData({...passwordData, re_new_password: e.target.value})}
+                    placeholder="Confirmez votre nouveau mot de passe"
+                  />
+                </FormControl>
+              </VStack>
+            </ModalBody>
+
+            <ModalFooter>
+              <Button 
+                colorScheme="blue" 
+                onClick={handlePasswordChange}
+                isLoading={isPasswordLoading}
+                mr={3}
+              >
+                Enregistrer
+              </Button>
+              <Button onClick={() => setIsPasswordModalOpen(false)}>Annuler</Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
       </Container>
     );
 }
