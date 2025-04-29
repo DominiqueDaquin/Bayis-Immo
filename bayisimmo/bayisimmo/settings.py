@@ -30,7 +30,7 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ["www.bayisimmob.com","bayisimmob.com","ec2-3-134-235-152.us-east-2.compute.amazonaws.com","127.0.0.1"]
+ALLOWED_HOSTS = ["www.bayisimmob.com","bayisimmob.com","ec2-3-134-235-152.us-east-2.compute.amazonaws.com","127.0.0.1","3.134.235.152"]
 
 LYGOS_API_KEY=os.getenv("LYGOS_API_KEY")
 # Application definition

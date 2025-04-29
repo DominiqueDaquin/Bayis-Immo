@@ -36,6 +36,11 @@ class AnnonceSerializer(serializers.ModelSerializer):
         write_only=True,
         required=False
     )  
+    photos_keep = serializers.ListField(
+        child=serializers.IntegerField(),
+        write_only=True,
+        required=False
+    )
     avis=serializers.SerializerMethodField()
     moyenne=serializers.SerializerMethodField()
     auteur_detail = serializers.SerializerMethodField(read_only=True)
@@ -44,7 +49,7 @@ class AnnonceSerializer(serializers.ModelSerializer):
         model = Annonce
         fields = [
             'id', 'titre', 'description', 'creer_le', 'creer_par', 'status',
-            'photos', 'photos_upload', 'localisation', 'prix', 'vues','avis','moyenne','auteur_detail'
+            'photos', 'photos_upload', 'localisation', 'prix', 'vues','avis','moyenne','auteur_detail','photos_keep'
         ]
         read_only_fields = ['vues']
 
@@ -78,28 +83,27 @@ class AnnonceSerializer(serializers.ModelSerializer):
         return annonce
 
     def update(self, instance, validated_data):
-        """ Mise à jour d'une annonce avec un tableau de photos """
-        photos_data = validated_data.pop('photos_upload', None)
+        photos_keep_ids = validated_data.pop('photos_keep', [])
+        photos_data = validated_data.pop('photos_upload', [])
 
-        # Mettre à jour les attributs de l'instance
+        # Mettre à jour les champs standards
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
         # Gestion des photos
-        if photos_data is not None:
-            # Supprimer les anciennes photos
-            instance.photos.clear()  
-            
-            # Créer et ajouter les nouvelles photos
-            media_list = []
-            for photo in photos_data:
-                media = Media.objects.create(photo=photo, type='photo')
-                media_list.append(media)
-            
-            # Utiliser set() avec tous les médias à la fois
-            if media_list:
-                instance.photos.set(media_list)
+        if photos_keep_ids is not None:
+            # Supprimer les photos non conservées
+            instance.photos.exclude(id__in=photos_keep_ids).delete()
+        
+        # Ajouter les nouvelles photos
+        media_list = []
+        for photo in photos_data:
+            media = Media.objects.create(photo=photo, type='photo')
+            media_list.append(media)
+        
+        if media_list:
+            instance.photos.add(*media_list)
 
         return instance
 
