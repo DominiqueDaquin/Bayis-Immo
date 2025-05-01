@@ -68,7 +68,7 @@ const TombolaListing = () => {
   const itemsPerPage = 6
 
   const isModerateur = userGroups?.includes("moderateur") || false
-  const isCreator = (tombola) => user && tombola.creer_par === user.id
+  const isCreator = (tombola) => user && tombola?.creer_par === user.id || false
   const isMobile = useBreakpointValue({ base: true, md: false })
   const toast = useToast()
 

@@ -108,7 +108,7 @@ const SidebarContent = ({ onClose = null, setActiveMenu, setActiveTab, component
   var navItems = [
     { label: "Tableau de bord", key: "dashboard", icon: FiHome },
     { label: "Annonces", key: "annonces", icon: FiCompass },
-    { label: "Cagnotte", key: "tombola", icon: FiGift },
+    isModerateur && { label: "Cagnotte", key: "tombola", icon: FiGift },
     { label: "Publicité", key: "publicite", icon: FiMonitor },
     { 
       label: "Notifications", 
@@ -124,7 +124,8 @@ const SidebarContent = ({ onClose = null, setActiveMenu, setActiveTab, component
     },
     
     { label: "Paramètres", key: "settings", icon: FiSettings },
-    isModerateur?{ label: "Utilisateurs", key: "utilisateurs", icon: FiUser }:''
+    isModerateur&&{ label: "Utilisateurs", key: "utilisateurs", icon: FiUser }
+    
   ]
   // if (isModerateur)
   //   navItems.append({ label: "Utilisateurs", key: "utilisateurs", icon: FiUser })

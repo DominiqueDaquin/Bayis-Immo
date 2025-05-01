@@ -76,52 +76,53 @@ const PropertyCard = ({ property, isFavorite, onToggleFavorite, id, currentUser 
 
     // Gère la création de publicité
     const handleBoost = async () => {
-        setIsLoading(true);
-        setError(null);
-        
-        try {
-            const selectedOption = durationOptions.find(opt => opt.value === selectedDuration);
-            const response = await axiosInstance.post("/api/publicites/", {
-                user: currentUser.id,
-                annonce: property.id,
-                titre: `Publicité pour ${property.titre}`,
-                duree_jours: selectedOption.value,
-                montant: selectedOption.price
-            });
-            setPub(response.data)
-            console.log(pub);
-            const pubs=pub
-            console.log(pubs);
-            
-            toast({
-                title: "Publicité créée",
-                description: `vous allez être redirigé vers le paiement`,
-                status: "success",
-                duration: 5000,
-                isClosable: true,
-            });
-            onBoostClose();
-            try{
-              console.log("hello");
-              
-              handlePayerPublicite(pub)
-            }catch(err){
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+          const selectedOption = durationOptions.find(opt => opt.value === selectedDuration);
+          const response = await axiosInstance.post("/api/publicites/", {
+              user: currentUser.id,
+              annonce: property.id,
+              titre: `Publicité pour ${property.titre}`,
+              duree_jours: selectedOption.value,
+              montant: selectedOption.price
+          });
+  
+          const pubData = response.data;
+          setPub(pubData); // Tu peux quand même stocker la donnée si nécessaire ailleurs
+          console.log("Pub créée :", pubData);
+  
+          toast({
+              title: "Publicité créée",
+              description: `vous allez être redirigé vers le paiement`,
+              status: "success",
+              duration: 5000,
+              isClosable: true,
+          });
+          onBoostClose();
+  
+          try {
+              console.log("Redirection vers le paiement pour :", pubData);
+              handlePayerPublicite(pubData); // Ici on passe la vraie donnée
+          } catch (err) {
               toast({
-                title: "Passez au paiement",
-                description: `veuillez vous rendre au niveau de votre dashboard pour finaliser le paiement`,
-                status: "alert",
-                duration: 5000,
-                isClosable: true,
-            });
-            }
-            
-        } catch (err) {
-            console.log("une erreur est survenue", err);
-            setError(err.response?.data || "Une erreur est survenue");
-        } finally {
-            setIsLoading(false);
-        }
-    };
+                  title: "Passez au paiement",
+                  description: `veuillez vous rendre au niveau de votre dashboard pour finaliser le paiement`,
+                  status: "alert",
+                  duration: 5000,
+                  isClosable: true,
+              });
+          }
+  
+      } catch (err) {
+          console.log("Une erreur est survenue :", err);
+          setError(err.response?.data || "Une erreur est survenue");
+      } finally {
+          setIsLoading(false);
+      }
+  };
+  
 
     // Gère l'ajout à la cagnotte
     const handleAddToTombola = async () => {

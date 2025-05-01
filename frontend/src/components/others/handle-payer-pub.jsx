@@ -41,7 +41,8 @@ const handlePayerPublicite = async (publicite) => {
         );
 
         if (orderResponse.status === 200) {
-          window.location.href = response.data.link;
+          window.open(response.data.link, '_blank');
+
         } else {
           console.error("Erreur lors de la mise à jour de l'order_id");
           // Gestion d'erreur supplémentaire si nécessaire
@@ -71,7 +72,8 @@ const handlePayerPublicite = async (publicite) => {
     }
     
     // Redirection vers la page d'échec
-    window.location.href = linkechec;
+    // window.location.href = linkechec;
+    window.open(linkechec, '_blank');
   }
 };
 

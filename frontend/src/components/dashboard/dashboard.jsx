@@ -35,10 +35,10 @@ export default function Dashboard() {
   const { userGroups } = useAuth()
   const isModerateur = userGroups.includes("moderateur")
   console.log("est Moderateur", isModerateur);
-  const COMPONENTS = {
+  var COMPONENTS = {
     dashboard: <HomeDashboard />,
     annonces: <Annonce isModerateur={isModerateur} />,
-    tombola: <Tombola isModerateur={isModerateur} />,
+    
     publicite: <GestionnaireCampagnes isModerateur={isModerateur} />,
     notifications: <Notifications />,
     messages: <Chat />,
@@ -46,6 +46,9 @@ export default function Dashboard() {
     settings: <ProfileSettings />,
     utilisateurs:<UserManagementPage/>,
   }
+  isModerateur && (COMPONENTS.tombola = <Tombola isModerateur={isModerateur} />);
+
+
   const { isOpen, onOpen, onClose } = useDisclosure()
   const [activeTab, setActiveTab] = useState(localStorage.getItem("activeTab") || "dashboard")
   const [activeMenu, setActiveMenu] = useState(COMPONENTS[activeTab])
