@@ -86,24 +86,26 @@ class AnnonceSerializer(serializers.ModelSerializer):
         photos_keep_ids = validated_data.pop('photos_keep', [])
         photos_data = validated_data.pop('photos_upload', [])
 
+        
         # Mettre à jour les champs standards
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
 
+        if len(photos_keep_ids) > 0 or len(photos_data)>0:
         # Gestion des photos
-        if photos_keep_ids is not None:
-            # Supprimer les photos non conservées
-            instance.photos.exclude(id__in=photos_keep_ids).delete()
+            if photos_keep_ids is not None:
+                # Supprimer les photos non conservées
+                instance.photos.exclude(id__in=photos_keep_ids).delete()
+            
+            # Ajouter les nouvelles photos
+            media_list = []
+            for photo in photos_data:
+                media = Media.objects.create(photo=photo, type='photo')
+                media_list.append(media)
         
-        # Ajouter les nouvelles photos
-        media_list = []
-        for photo in photos_data:
-            media = Media.objects.create(photo=photo, type='photo')
-            media_list.append(media)
-        
-        if media_list:
-            instance.photos.add(*media_list)
+            if media_list:
+                instance.photos.add(*media_list)
 
         return instance
 
@@ -255,7 +257,6 @@ class VueSerializer(serializers.ModelSerializer):
         if Vue.objects.filter(user=data['user'], annonce=data['annonce']).exists():
             raise serializers.ValidationError("L'utilisateur a déjà vu cet article.")
         return data
-
 
 class PubliciteSerializer(serializers.ModelSerializer):
     # nombre_de_jours = serializers.IntegerField(read_only=True)
