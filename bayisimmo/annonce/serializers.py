@@ -1,9 +1,10 @@
 from rest_framework import serializers
 from authentification.serializers import UserSerializer
-from .models import Media,Annonce,Message,Discussion,AnnonceFavoris,Note,Tombola,Commentaire,Vue,Publicite,UserTombola
+from .models import Media,Annonce,Message,Discussion,AnnonceFavoris,Note,Tombola,Commentaire,Vue,Publicite,UserTombola,DemandeBien,AnnoncePayment,Notification
 from django.contrib.auth import get_user_model
-from .models import Notification
+
 User=get_user_model()
+
 class MediaSerializer(serializers.ModelSerializer):
     photo=serializers.SerializerMethodField()
     class Meta:
@@ -30,7 +31,7 @@ class AnnonceSerializer(serializers.ModelSerializer):
         read_only=True,
         slug_field="name"
     )
-    photos = MediaSerializer(many=True, required=False)  # Permet d'afficher les photos existantes
+    photos = MediaSerializer(many=True, required=False) 
     photos_upload = serializers.ListField(
         child=serializers.ImageField(),
         write_only=True,
@@ -273,3 +274,62 @@ class PubliciteSerializer(serializers.ModelSerializer):
         if value < 250:
             raise serializers.ValidationError("Le montant minimum est de 250 FCFA.")
         return value
+
+    
+    def create(self,**validated_data):
+        pub=Publicite.objects.create(**validated_data)
+        try:
+            annonce=Annonce.objects.get(pk=annonce)
+            annonce.status='s'
+            annonce.save()
+        except Exception as e:
+            print(' Erreur au niveau du changement de status a sponsoriser pour annonce ')
+
+        return pub
+
+
+
+class DemandeBienSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
+    type_bien_display = serializers.CharField(source='get_type_bien_display', read_only=True)
+    statut_display = serializers.CharField(source='get_statut_display', read_only=True)
+
+    class Meta:
+        model = DemandeBien
+        fields = [
+            'id',
+            'user',
+            'type_bien',
+            'ville',
+            'type_bien_display',
+            'localisation',
+            'superficie_min',
+            'superficie_max',
+            'budget_min',
+            'budget_max',
+            'description',
+            'date_creation',
+            'statut',
+            'statut_display',
+            'frais',
+            'order_id',
+        ]
+        read_only_fields = ['user', 'date_creation']
+
+    def validate(self, data):
+        if data['superficie_min'] > data['superficie_max']:
+            raise serializers.ValidationError("La superficie minimale ne peut pas être supérieure à la superficie maximale")
+        
+        if data['budget_min'] > data['budget_max']:
+            raise serializers.ValidationError("Le budget minimum ne peut pas être supérieur au budget maximum")
+        
+        return data
+    
+    
+
+class AnnoncePaymentSerializer(serializers.ModelSerializer):
+    
+    
+    class Meta:
+        fields=['user','annonce','description','order_id','status']
+        read_only_fields=['user','annonce']

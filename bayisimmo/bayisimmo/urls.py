@@ -25,6 +25,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('auth/',include('djoser.urls')),
     path('auth/',include('djoser.urls.jwt')),
+    path('', include('social_django.urls', namespace='social')),
+    path('auth/oauth2/', include('oauth2_provider.urls', namespace='oauth2_provider')),
     
     path('auth/add-to-group/',AddToGroupView.as_view()),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),  

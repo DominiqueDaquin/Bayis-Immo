@@ -29,8 +29,10 @@ SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
-
-ALLOWED_HOSTS = ["www.bayisimmob.com","bayisimmob.com","ec2-3-134-235-152.us-east-2.compute.amazonaws.com","127.0.0.1","3.134.235.152"]
+if DEBUG:
+    ALLOWED_HOSTS = ["*"]
+else:
+    ALLOWED_HOSTS = ["www.bayisimmob.com","bayisimmob.com","ec2-3-134-235-152.us-east-2.compute.amazonaws.com","127.0.0.1","3.134.235.152"]
 
 LYGOS_API_KEY=os.getenv("LYGOS_API_KEY")
 # Application definition
@@ -56,9 +58,11 @@ INSTALLED_APPS = [
     'annonce',
 
     #pour s3
-    "storages"
-
-
+    "storages",
+    'oauth2_provider',
+    'social_django', 
+    'rest_framework_social_oauth2',  
+    
 ]
 
 MIDDLEWARE = [
@@ -70,6 +74,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'social_django.middleware.SocialAuthExceptionMiddleware',
 ]
 
 ROOT_URLCONF = 'bayisimmo.urls'
@@ -77,7 +82,7 @@ ROOT_URLCONF = 'bayisimmo.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -85,10 +90,47 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'social_django.context_processors.backends',  
+                'social_django.context_processors.login_redirect',
             ],
         },
     },
 ]
+
+AUTHENTICATION_BACKENDS = (
+    'social_core.backends.google.GoogleOAuth2', 
+    'rest_framework_social_oauth2.backends.DjangoOAuth2',
+    'django.contrib.auth.backends.ModelBackend',  
+)
+
+DRFSO2_URL_NAMESPACE = 'oauth2_provider'
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.getenv("GOOGLE_CLIENT_ID")
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.getenv("GOOGLE_SECRET_ID")
+
+
+# Les scopes demandés à Google
+SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = ['email', 'profile']
+
+# Configuration de la redirection
+if DEBUG:
+    SOCIAL_AUTH_LOGIN_REDIRECT_URL = 'http://localhost:5173'  
+else:
+    SOCIAL_AUTH_LOGIN_REDIRECT_URL = 'https://bayisimmob.com' 
+SOCIAL_AUTH_URL_NAMESPACE = 'social'
+
+SOCIAL_AUTH_PIPELINE = (
+    'social_core.pipeline.social_auth.social_details',
+    'social_core.pipeline.social_auth.social_uid',
+    'social_core.pipeline.social_auth.social_user',
+    'social_core.pipeline.user.get_username',
+    'social_core.pipeline.social_auth.associate_by_email',
+    'social_core.pipeline.user.create_user',
+    'social_core.pipeline.social_auth.associate_user',
+    'social_core.pipeline.social_auth.load_extra_data',
+    'social_core.pipeline.user.user_details',
+)
+
+
 
 WSGI_APPLICATION = 'bayisimmo.wsgi.application'
 
@@ -176,6 +218,9 @@ REST_FRAMEWORK={
     ],
 }
 
+
+SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = 'http://localhost:8000/complete/google-oauth2/'
+
 DJOSER={
     'LOGIN_FIELD':'email',
     'SERIALIZERS': {
@@ -191,6 +236,7 @@ DJOSER={
         'user_list': ['rest_framework.permissions.IsAdminUser'],  # Modifier si nécessaire
         'user': ['rest_framework.permissions.IsAuthenticated'],
     },
+    'SOCIAL_AUTH_ALLOWED_REDIRECT_URIS': ['http://localhost:5173','https://bayisimmob.com'],
 }
 
 SIMPLE_JWT={

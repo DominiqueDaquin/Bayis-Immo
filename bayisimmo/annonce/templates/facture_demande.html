@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Facture Demande #{{ demande.id }}</title>
+
+   <style>
+        html{
+            border: 1px double gold;
+        }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 10px; color: #333; line-height: 0cm;font-size: 18px;font-family: 'Poppins',sans-serif; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { color: #2c3e50; margin-bottom: 5px; }
+        .header p { margin: 0; color: #7f8c8d; }
+        .info { margin-bottom: 30px; }
+        .info div { margin-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .total { text-align: right; font-weight: bold; font-size: 1.2em; }
+        .footer { margin-top: 50px; font-size: 0.9em; text-align: center; color: #7f8c8d; }
+        .logo { text-align: center; margin-bottom: 20px; }
+        .inline-block{display: inline-block;}
+    </style>
+</head>
+<body>
+    <div class="logo">
+        <h2>Bayis Immob  &ndash; Votre partenaire immobilier de confiance </h2>
+        
+    </div>
+    
+    <div class="header">
+        <h1 class="inline-block">Facture #{{ demande.id }} </h1>
+        <p class="inline-block">(Date: {{ demande.date_creation|date:"d/m/Y" }})</p>
+    </div>
+    
+    <div class="info">
+        <div><strong>Client:</strong> {{ user.get_full_name|default:user.username }}</div>
+        <div><strong>Email:</strong> {{ user.email }}</div>
+    </div>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th>Détails</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Type de bien</td>
+                <td>{{ demande.get_type_bien_display }}</td>
+            </tr>
+            <tr>
+                <td>Localisation</td>
+                <td>{{ demande.localisation }}, {{ demande.ville }}</td>
+            </tr>
+            <tr>
+                <td>Superficie</td>
+                <td>{{ demande.superficie_min }} - {{ demande.superficie_max }} m²</td>
+            </tr>
+            <tr>
+                <td>Budget</td>
+                <td>{{ demande.budget_min }} - {{ demande.budget_max }} FCFA</td>
+            </tr>
+            <tr>
+                <td>Frais d'ouverture de dossier</td>
+                <td>{{ demande.frais }} FCFA</td>
+            </tr>
+            <tr>
+                <td>Statut du paiement</td>
+                <td>{{ demande.get_statut_display }}</td>
+            </tr>
+            <tr>
+                <td>Date de création</td>
+                <td>{{ demande.date_creation|date:"d/m/Y H:i" }}</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <div class="total">
+        Total: {{ demande.frais }} FCFA
+    </div>
+    
+    <div class="footer">
+        <p>Merci pour votre confiance, nous allons trouver le bien que vous nous avez demander dans les plus bref delais</p>
+        <p>Bayis Immob - Tél: +237 695 240 165 - Email: bayisimmob@gmail.com </p>
+    </div>
+
+</body>
+</html>

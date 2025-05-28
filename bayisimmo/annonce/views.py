@@ -24,6 +24,11 @@ from django.db.models import Count
 from django.db.models.functions import TruncDate
 from django.core.mail import send_mail
 from django.conf import settings
+from django.template.loader import get_template
+from xhtml2pdf import pisa
+from io import BytesIO
+from django.core.mail import EmailMessage
+from django.http import HttpResponse
 from .models import (
     Annonce,
     Message,
@@ -37,6 +42,8 @@ from .models import (
     Publicite,
     UserTombola,
     Vue, 
+    DemandeBien,
+    AnnoncePayment,
                       
                      )
 from .serializers import (
@@ -52,7 +59,9 @@ from .serializers import (
     VueSerializer,
     PubliciteSerializer,
     UserTombolaSerializer,
-    ParticipationSerializer
+    ParticipationSerializer,
+    DemandeBienSerializer,
+    AnnoncePaymentSerializer,
                           )
 User=get_user_model()
 
@@ -69,8 +78,6 @@ def send_mail_to_moderateur(subject,message):
                 from_email=settings.EMAIL_HOST_USER,
                 recipient_list=emails_moderateurs
             )
-
-
 
 class AnnonceView(viewsets.ModelViewSet):
 
@@ -389,7 +396,7 @@ class TombolaView(viewsets.ModelViewSet):
                     default=1,
                     output_field=IntegerField(),
                 )
-).order_by('statut_priority','-creer_le')
+        ).order_by('statut_priority','-creer_le')
         else:
             return Tombola.objects.filter(statut='a').order_by('-creer_le')
 
@@ -622,10 +629,6 @@ class PubliciteView(viewsets.ModelViewSet):
         except Exception as e:
             print(e)
         
-        
-
-        
-
 class LygosPaymentView(APIView):
     def post(self, request):
         url = "https://api.lygosapp.com/v1/gateway"
@@ -640,8 +643,6 @@ class LygosPaymentView(APIView):
 
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
 
 class LygosPaymentStatusView(APIView):
     def post(self, request):
@@ -661,7 +662,6 @@ class LygosPaymentStatusView(APIView):
         
         except requests.RequestException as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 class UserTombalaView(viewsets.ModelViewSet):
     queryset = UserTombola.objects.all()
@@ -683,7 +683,6 @@ class UserParticipationsView(generics.ListAPIView):
         user = self.request.user
         return UserTombola.objects.filter(user=user).select_related('tombola')
 
-
 class SendMailView(APIView):
     def post(self, request, *args, **kwargs):
         objet=request.data.get("objet")
@@ -699,7 +698,6 @@ class SendMailView(APIView):
             return Response({"detail":"Email envoyé avec success"},status=status.HTTP_200_OK)
         
         return Response({"detail":"une erreur est survenue"},status=status.HTTP_400_BAD_REQUEST)
-
 
 class StatistiquesAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -751,3 +749,129 @@ class StatistiquesAPIView(APIView):
             cache.set(cache_key, data, timeout=60)  
         
         return Response(data, status=status.HTTP_200_OK)
+
+class DemandeBienViewSet(viewsets.ModelViewSet):
+    queryset = DemandeBien.objects.all()
+    serializer_class = DemandeBienSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Un utilisateur ne voit que ses propres demandes
+        return self.queryset.filter(user=self.request.user).order_by('-date_creation')
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+        try:
+            send_mail_to_moderateur(
+    
+                subject= f"🚨 Urgent - Nouvelle demande immobilière à pourvoir pour {self.request.user.email} 🏡",
+                message=f" 🔥 Offre à saisir!  Un client recherche activement un  {serializer.type_bien_display} à {serializer.localisation},{serializer.ville}\n-budget:{serializer.budget_min}-{serializer.budget_max} Fcfa \n-superficie:{serializer.superficie_min}-{serializer.superficie_max} m2\n Le client a payer des frais de : {serializer.frais}"
+                
+            )
+
+        except expression as identifier:
+            print("erreur lors de l'envoie des mails aux moderateurs------ Demander bien")
+
+
+    def update(self, request, *args, **kwargs):
+        # Empêcher la modification des champs spécifiques
+        if 'statut' in request.data and not request.user.is_staff:
+            return Response(
+                {"detail": "Vous ne pouvez pas modifier le statut de la demande."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        return super().update(request, *args, **kwargs)
+
+    @action(detail=True, methods=['get'])
+    def facture(self, request, pk=None):
+        demande = self.get_object()
+        
+        # Rendre le template HTML
+        template = get_template('facture_demande.html')
+        context = {
+            'demande': demande,
+            'user': request.user
+        }
+        html = template.render(context)
+        
+        # Créer un PDF
+        result = BytesIO()
+        pdf = pisa.pisaDocument(BytesIO(html.encode("UTF-8")), result)
+        
+        if not pdf.err:
+            response = HttpResponse(result.getvalue(), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="facture_demande_{demande.id}.pdf"'
+            return response
+        
+        return HttpResponse("Erreur lors de la génération du PDF", status=500)
+
+
+    @action(detail=False, methods=['post'])
+    def envoyer_facture(self, request):
+        demande_id = request.data.get('demande_id')
+        try:
+            demande = DemandeBien.objects.get(id=demande_id)
+            
+            # Générer le PDF en mémoire
+            template = get_template('facture_demande.html')
+            context = {
+                'demande': demande,
+                'user': request.user
+            }
+            html = template.render(context)
+            pdf_buffer = BytesIO()
+            pisa.pisaDocument(BytesIO(html.encode("UTF-8")), pdf_buffer)
+            
+            # Créer l'email
+            email = EmailMessage(
+                subject=f"Facture pour votre demande de bien #{demande.id}",
+                body=f"""
+                Bonjour {request.user.get_full_name() or request.user.username},
+                
+                Vous trouverez ci-joint la facture pour votre demande de bien immobilier.
+                
+                Détails de la demande:
+                - Type: {demande.get_type_bien_display()}
+                - Localisation: {demande.localisation}, {demande.ville}
+                - Superficie: {demande.superficie_min} - {demande.superficie_max} m²
+                - Budget: {demande.budget_min} - {demande.budget_max} FCFA
+                - Frais: {demande.frais} FCFA
+                
+                Cordialement,
+                L'équipe Bayis Immob
+                """,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[request.user.email],
+            )
+            
+            # Attacher le PDF
+            email.attach(
+                f"facture_demande_{demande.id}.pdf",
+                pdf_buffer.getvalue(),
+                'application/pdf'
+            )
+            
+            email.send()
+            
+            return Response(
+                {"status": "success", "message": "Facture envoyée par email"},
+                status=status.HTTP_200_OK
+            )
+            
+        except DemandeBien.DoesNotExist:
+            return Response(
+                {"status": "error", "message": "Demande introuvable"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"status": "error", "message": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+            
+
+class AnnoncePaymentView(viewsets.ModelViewSet):
+    queryset=AnnoncePayment.objects.all()
+    serializer_class=AnnoncePaymentSerializer
+    permission_classes=[IsAuthenticated]
+    

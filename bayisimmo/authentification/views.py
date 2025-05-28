@@ -8,7 +8,57 @@ from rest_framework.decorators import api_view,permission_classes
 from rest_framework.permissions import AllowAny
 from .serializers import GroupSerializer
 from rest_framework.viewsets import ModelViewSet
+from rest_framework_simplejwt.tokens import RefreshToken
+from social_django.utils import load_strategy, load_backend
+from social_core.exceptions import MissingBackend, AuthForbidden
+from django.urls import reverse
+
+
 User=get_user_model()
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def exchange_token(request):
+    """
+    Exchange Google auth token for JWT
+    """
+    provider = request.data.get('provider', 'google-oauth2')
+    access_token = request.data.get('access_token', None)
+    
+    if not access_token:
+        return Response({'error': 'No access token provided'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        # Initialisation de la stratégie et du backend
+        strategy = load_strategy(request)
+        backend = load_backend(strategy=strategy, name=provider, redirect_uri=None)
+        
+        # Obtenir les données utilisateur depuis le token
+        user = backend.do_auth(access_token)
+        
+        if user:
+            # Générer les tokens JWT
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+                'user': {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name
+                }
+            })
+        else:
+            return Response({'error': 'Failed to authenticate'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    except (MissingBackend, AuthForbidden) as e:
+        return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
 class AddToGroupView(APIView):
     
     

@@ -311,9 +311,61 @@ class Notification(models.Model):
         return f"{self.user} - {self.message[:50]}"
     
 
+class DemandeBien(models.Model):
+
+
+    TYPE_BIEN_CHOICES = [
+        ('terrain', 'Terrain'),
+        ('maison', 'Maison'),
+        ('appartement', 'Appartement'),
+        ('local_commercial', 'Local Commercial'),
+        ('autres', 'Autres'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='demandes')
+    type_bien = models.CharField(max_length=50, choices=TYPE_BIEN_CHOICES)
+    ville=models.CharField(max_length=50)
+    localisation = models.CharField(max_length=255)
+    superficie_min = models.PositiveIntegerField(help_text="Superficie minimale en m²")
+    superficie_max = models.PositiveIntegerField(help_text="Superficie maximale en m²")
+    budget_min = models.DecimalField(max_digits=12, decimal_places=2)
+    budget_max = models.DecimalField(max_digits=12, decimal_places=2)
+    description = models.TextField(blank=True)
+    date_creation = models.DateTimeField(auto_now_add=True)
+    statut = models.CharField(max_length=20, default='en_attente', choices=[
+        ('en_attente', 'En attente'),
+        ('en_cours', 'En cours de traitement'),
+        ('traitee', 'Traitée'),
+    ])    
+    frais=models.DecimalField(max_digits=12, decimal_places=2)
+    order_id=models.CharField(max_length=100)
+
+    class Meta:
+        ordering = ['-date_creation']
+        verbose_name = "Demande de bien"
+        verbose_name_plural = "Demandes de biens"
+
+    def __str__(self):
+        return f"Demande de {self.get_type_bien_display()} à {self.localisation}"
+
+
 @receiver(post_save, sender=Message)
 def update_discussion_unread(sender, instance, created, **kwargs):
         if created:  
             discussion = instance.discussion
             discussion.un_read = True
             discussion.save()
+
+
+
+
+class AnnoncePayment(models.Model):
+    
+    """ store payment for annonce """
+    
+    user=models.ForeignKey(User,on_delete=models.CASCADE)
+    annonce=models.ForeignKey(Annonce,on_delete=models.CASCADE)
+    description=models.CharField(max_length=25)
+    order_id=models.CharField(max_length=50)
+    status=models.CharField(max_length=10)
+    
