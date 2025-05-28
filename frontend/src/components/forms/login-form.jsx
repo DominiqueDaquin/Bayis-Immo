@@ -27,6 +27,8 @@ import { FiMail, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
 import { AuthContext } from '@/context/AuthContext';
 import { BaseForm } from './base-form';
 import axiosInstance from '@/api/axios';
+import GoogleLogin from '../others/google-login';
+
 
 export const LoginForm = () => {
   const [email, setEmail] = useState('');
@@ -176,13 +178,15 @@ export const LoginForm = () => {
         >
           Se connecter
         </Button>
-
+ 
         <Text mt={4} textAlign="center" fontSize="sm">
           Pas encore de compte ?{' '}
           <Link as={RouterLink} to="/signup" color="blue.500" fontWeight="medium">
             Créer un compte
           </Link>
         </Text>
+
+
       </BaseForm>
 
       {/* Modal pour la réinitialisation du mot de passe */}

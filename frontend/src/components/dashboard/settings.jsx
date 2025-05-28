@@ -102,6 +102,8 @@ export default function Settings() {
       re_new_password: ''
     });
     const [isPasswordLoading, setIsPasswordLoading] = useState(false);
+    const [isAdvertiserModalOpen, setIsAdvertiserModalOpen] = useState(false);
+    const [isAdvertiserLoading, setIsAdvertiserLoading] = useState(false);
     const fileInputRef = useRef(null);
     const toast = useToast();
     const { colorMode, toggleColorMode } = useColorMode();
@@ -196,6 +198,34 @@ export default function Settings() {
         showToast(errorMessage, "error");
       } finally {
         setIsPasswordLoading(false);
+      }
+    };
+
+    const handleBecomeAdvertiser = async () => {
+      setIsAdvertiserLoading(true);
+      
+      try {
+        await axiosInstance.post('/auth/add-to-group/', { 
+          group_name: 'annonceur',
+          user_id: userDetail.id 
+        });
+        
+        showToast("Vous êtes maintenant annonceur!", "success");
+        setIsAdvertiserModalOpen(false);
+      } catch (error) {
+        let errorMessage = "Erreur lors de l'ajout au groupe annonceur";
+        
+        if (error.response?.data) {
+          if (error.response.data.error) {
+            errorMessage = error.response.data.error;
+          } else if (error.response.data.detail) {
+            errorMessage = error.response.data.detail;
+          }
+        }
+        
+        showToast(errorMessage, "error");
+      } finally {
+        setIsAdvertiserLoading(false);
       }
     };
   
@@ -310,6 +340,25 @@ export default function Settings() {
             </VStack>
           </SettingsSection>
 
+          {/* Section Devenir Annonceur */}
+          <SettingsSection icon={<Box as="span" fontSize="lg">📢</Box>} title="Devenir Annonceur">
+            <VStack spacing={4} align="stretch" width="100%">
+              <SettingItem
+                label="Statut Annonceur"
+                description="Publiez des annonces et bénéficiez de visibilité"
+                control={
+                  <Button 
+                    colorScheme="orange" 
+                    size={["sm", "md"]}
+                    onClick={() => setIsAdvertiserModalOpen(true)}
+                  >
+                    Devenir Annonceur
+                  </Button>
+                }
+              />
+            </VStack>
+          </SettingsSection>
+
           {/* Section Préférences */}
           <SettingsSection icon={<SunIcon />} title="Préférences du Site">
             <VStack spacing={4} align="stretch" width="100%">
@@ -397,6 +446,44 @@ export default function Settings() {
                 Enregistrer
               </Button>
               <Button onClick={() => setIsPasswordModalOpen(false)}>Annuler</Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+
+        {/* Modal Devenir Annonceur */}
+        <Modal isOpen={isAdvertiserModalOpen} onClose={() => setIsAdvertiserModalOpen(false)}>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Devenir Annonceur</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody pb={6}>
+              <VStack spacing={4} align="stretch">
+                <Text>
+                  En devenant annonceur, vous pourrez publier des annonces sur notre plateforme et bénéficier d'une visibilité accrue.
+                </Text>
+                <Text fontWeight="bold">Avantages :</Text>
+                <VStack align="start" spacing={2}>
+                  <Text>• Publication illimitée d'annonces</Text>
+                  <Text>• Mise en avant de vos annonces</Text>
+                  <Text>• Statistiques détaillées de performance</Text>
+                  <Text>• Support prioritaire</Text>
+                </VStack>
+                <Text mt={4}>
+                  En cliquant sur "Valider", vous acceptez nos conditions générales pour les annonceurs.
+                </Text>
+              </VStack>
+            </ModalBody>
+
+            <ModalFooter>
+              <Button 
+                colorScheme="orange" 
+                onClick={handleBecomeAdvertiser}
+                isLoading={isAdvertiserLoading}
+                mr={3}
+              >
+                Valider
+              </Button>
+              <Button onClick={() => setIsAdvertiserModalOpen(false)}>Annuler</Button>
             </ModalFooter>
           </ModalContent>
         </Modal>
