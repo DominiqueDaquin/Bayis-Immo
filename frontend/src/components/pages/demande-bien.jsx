@@ -40,10 +40,10 @@ import { baseUrlFrontend } from '@/config';
 
 // Configuration des frais par ville
 const FRAIS_PAR_VILLE = {
-    douala: 10000,
-    yaounde: 10000,
-    edea: 10000,
-    kribi: 10000
+    douala:250,
+    yaounde:250,
+    edea:250,
+    kribi:250
 };
 
 const DemandesBien = () => {
@@ -378,13 +378,13 @@ const DemandesBien = () => {
                         <ModalOverlay />
                         <ModalContent>
                             <ModalHeader>Nouvelle Demande de Bien</ModalHeader>
-                            <Text> Dans un delai de 5 jours nous allons vous trouver des offres qui correspondent le plus a votre demande </Text>
+                            <Text m={6}> Votre demande sera envoyer à nos annonceurs qui trouveront dans les plus bref delai votre bien </Text>
                             <ModalCloseButton />
                             <ModalBody pb={6}>
                                 <VStack spacing={4}>
                                     <Alert status="info" borderRadius="md">
                                         <AlertIcon />
-                                        Frais d'ouverture de dossier: {new Intl.NumberFormat('fr-FR').format(formData.frais)} FCFA
+                                        Frais à payer des frais de demande: {new Intl.NumberFormat('fr-FR').format(formData.frais)} FCFA
                                     </Alert>
 
                                     <FormControl isRequired>
@@ -409,10 +409,10 @@ const DemandesBien = () => {
                                             value={formData.ville}
                                             onChange={handleInputChange}
                                         >
-                                            <option value="douala">Douala (10,000 FCFA)</option>
-                                            <option value="yaounde">Yaounde (10,000 FCFA)</option>
-                                            <option value="edea">Edea (10,000 FCFA)</option>
-                                            <option value="kribi">Kribi (10,000 FCFA)</option>
+                                            <option value="douala">Douala </option>
+                                            <option value="yaounde">Yaounde </option>
+                                            <option value="edea">Edea </option>
+                                            <option value="kribi">Kribi </option>
                                             {/* <option value="autres">Autres villes (10,000 FCFA)</option> */}
                                         </Select>
                                     </FormControl>

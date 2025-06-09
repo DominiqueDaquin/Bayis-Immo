@@ -43,7 +43,7 @@ from .models import (
     UserTombola,
     Vue, 
     DemandeBien,
-    AnnoncePayment,
+    UserSubscription,
                       
                      )
 from .serializers import (
@@ -61,7 +61,7 @@ from .serializers import (
     UserTombolaSerializer,
     ParticipationSerializer,
     DemandeBienSerializer,
-    AnnoncePaymentSerializer,
+    UserSubscriptionSerializer,
                           )
 User=get_user_model()
 
@@ -78,6 +78,22 @@ def send_mail_to_moderateur(subject,message):
                 from_email=settings.EMAIL_HOST_USER,
                 recipient_list=emails_moderateurs
             )
+            
+
+def send_mail_to_annonceur(subject,message):
+        moderateurs = User.objects.filter(groups__name='annonceur' )
+
+        emails_moderateurs = [user.email for user in moderateurs if user.email]
+        
+        if emails_moderateurs:
+            
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=emails_moderateurs
+            )
+
 
 class AnnonceView(viewsets.ModelViewSet):
 
@@ -762,7 +778,7 @@ class DemandeBienViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
         try:
-            send_mail_to_moderateur(
+            send_mail_to_annonceur(
     
                 subject= f"🚨 Urgent - Nouvelle demande immobilière à pourvoir pour {self.request.user.email} 🏡",
                 message=f" 🔥 Offre à saisir!  Un client recherche activement un  {serializer.type_bien_display} à {serializer.localisation},{serializer.ville}\n-budget:{serializer.budget_min}-{serializer.budget_max} Fcfa \n-superficie:{serializer.superficie_min}-{serializer.superficie_max} m2\n Le client a payer des frais de : {serializer.frais}"
@@ -870,8 +886,64 @@ class DemandeBienViewSet(viewsets.ModelViewSet):
             )
             
 
-class AnnoncePaymentView(viewsets.ModelViewSet):
-    queryset=AnnoncePayment.objects.all()
-    serializer_class=AnnoncePaymentSerializer
-    permission_classes=[IsAuthenticated]
+
     
+class SubscriptionViewSet(viewsets.ModelViewSet):
+    serializer_class = UserSubscriptionSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        return UserSubscription.objects.filter(user=self.request.user).order_by('-start_date')
+
+
+    @action(detail=False, methods=['post'])
+    def subscribe(self, request):
+        serializer = CreateSubscriptionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        # Désactiver les abonnements existants
+        UserSubscription.objects.filter(user=request.user, is_active=True).update(is_active=False)
+        
+        # Créer le nouvel abonnement
+        subscription = UserSubscription.objects.create(
+            user=request.user,
+            plan_type=serializer.validated_data['plan_type'],
+            payment_reference=serializer.validated_data['payment_reference'],
+            is_active=True
+        )
+        
+        return Response(
+            UserSubscriptionSerializer(subscription, context={'request': request}).data,
+            status=status.HTTP_201_CREATED
+        )
+
+
+
+    @action(detail=False, methods=['get'])
+    def current(self, request):
+        subscription = self.get_queryset().filter(is_active=True).first()
+        if not subscription:
+            return Response(
+                {'detail': "Aucun abonnement actif"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        serializer = self.get_serializer(subscription)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def plans(self, request):
+        plans = [
+            {
+                'plan_type': choice[0],
+                'name': choice[1],
+                'price': UserSubscription().price,
+                'duration_days': {
+                    'daily': 1,
+                    'weekly': 7,
+                    'monthly': 30
+                }.get(choice[0], 0)
+            }
+            for choice in UserSubscription.PLAN_CHOICES
+        ]
+        return Response(plans)

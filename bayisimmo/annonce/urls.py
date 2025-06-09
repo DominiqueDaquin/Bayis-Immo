@@ -2,7 +2,7 @@ from django.urls import path,include
 from rest_framework.routers import DefaultRouter
 from .views import (AnnonceView,MediaView,MessageView,DiscussionView,AnnonceFavorisView,TombolaView,
                     NotificationView,CommentaireView,NoteView,VueCreateAPIView,PubliciteView,LygosPaymentView,
-                    StatistiquesAPIView,LygosPaymentStatusView,UserTombalaView,UserParticipationsView ,SendMailView,DemandeBienViewSet )
+                    StatistiquesAPIView,LygosPaymentStatusView,UserTombalaView,UserParticipationsView ,SendMailView,DemandeBienViewSet,SubscriptionViewSet )
 
 router=DefaultRouter()
 router.register(r'annonces',AnnonceView)
@@ -17,6 +17,9 @@ router.register(r'notes', NoteView)
 router.register(r'publicites', PubliciteView)
 router.register(r'user-tombolas',UserTombalaView)
 router.register(r'demandes-biens', DemandeBienViewSet, basename='demande-bien')
+router.register(r'subscriptions', SubscriptionViewSet, basename='subscriptions')
+
+
 urlpatterns=[
 path('',include(router.urls)),
 path('vues/', VueCreateAPIView.as_view(), name='vue-create'),

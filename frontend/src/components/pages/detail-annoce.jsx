@@ -31,9 +31,16 @@ import {
   ModalContent,
   ModalCloseButton,
   ModalBody,
+  ModalHeader,
+  ModalFooter,
   useBreakpointValue,
   Flex,
-  Popover, PopoverTrigger, PopoverContent, PopoverArrow, PopoverCloseButton, PopoverBody
+  Popover, 
+  PopoverTrigger, 
+  PopoverContent, 
+  PopoverArrow, 
+  PopoverCloseButton, 
+  PopoverBody
 } from "@chakra-ui/react";
 import { FaHeart, FaRegHeart, FaEllipsisH, FaThumbsUp, FaReply, FaStar, FaShare, FaPhone, FaMapMarkerAlt, FaBed, FaBath, FaRulerCombined, FaEnvelope, FaEye } from "react-icons/fa";
 import { useParams, useNavigate } from "react-router-dom";
@@ -45,6 +52,7 @@ import { baseUrl } from "@/config";
 import { gsap } from "gsap";
 import Footer from "../partials/footer";
 import ShareButton from "./partials/share";
+
 export default function DetailAnnonce() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -56,10 +64,12 @@ export default function DetailAnnonce() {
   const [replyCommentId, setReplyCommentId] = useState(null);
   const [userRating, setUserRating] = useState(0);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [vue,setVue]=useState(0)
+  const [vue, setVue] = useState(0);
   const { isOpen, onToggle } = useDisclosure();
   const { isOpen: isImageModalOpen, onOpen: onImageModalOpen, onClose: onImageModalClose } = useDisclosure();
+  const { isOpen: isSubscriptionModalOpen, onOpen: onSubscriptionModalOpen, onClose: onSubscriptionModalClose } = useDisclosure();
   const { user, isAuthenticated } = useAuth();
+  const [hasActiveSubscription, setHasActiveSubscription] = useState(false);
   const toast = useToast();
   const containerRef = useRef();
   const isMobile = useBreakpointValue({ base: true, md: false });
@@ -97,23 +107,23 @@ export default function DetailAnnonce() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [annonceResponse, commentsResponse, favorisResponse, noteResponse] = await Promise.all([
+        const [annonceResponse, commentsResponse, favorisResponse, noteResponse, subscriptionResponse] = await Promise.all([
           axiosInstance.get(`/api/annonces/${id}`),
           axiosInstance.get(`/api/annonces/${id}/commentaires`),
           axiosInstance.get(`/api/annonces/${id}/is-favoris/`),
           axiosInstance.get(`/api/annonces/${id}/note`),
+          // isAuthenticated ? axiosInstance.get("/api/subscriptions/current/") : Promise.resolve({ data: { is_active: false } })
         ]);
 
         setAnnonce(annonceResponse.data);
         setComments(commentsResponse.data);
         setIsFavorite(favorisResponse.data.is_favoris);
         setUserRating(noteResponse.data?.user_note || 0);
+        setHasActiveSubscription(subscriptionResponse.data?.is_active || false);
         
         setLoading(false);
       } catch (err) {
         console.log(err);
-        console.log(annonce);
-        
         toast({
           title: "Erreur",
           description: err.message,
@@ -127,21 +137,20 @@ export default function DetailAnnonce() {
     };
 
     fetchData();
-  }, [id, toast]);
+  }, [id, toast, isAuthenticated]);
 
-  const addView=async ()=>{
-    
-    if(isAuthenticated){
-      const viewResponse= await axiosInstance.post("/api/vues/",{
-        annonce:id,
-        user:user.id,
-      })
-      console.log("Reponse vue:",viewResponse);
-      
-
+  const addView = async () => {
+    if (isAuthenticated) {
+      try {
+        await axiosInstance.post("/api/vues/", {
+          annonce: id,
+          user: user.id,
+        });
+      } catch (err) {
+        console.error("Error adding view:", err);
+      }
     }
-
-  }
+  };
 
   const handleToggleFavorite = async () => {
     if (isAuthenticated) {
@@ -167,7 +176,6 @@ export default function DetailAnnonce() {
         setIsFavorite(!isFavorite);
       } catch (err) {
         console.log(err);
-
         toast({
           title: "Erreur",
           description: err.message,
@@ -176,64 +184,89 @@ export default function DetailAnnonce() {
           isClosable: true,
         });
       }
-    }
-    else {
-      toast({
-        title: "Erreur",
-        description: "Vous devez vous authentifier avant de pouvoir realiser cette action",
-        status: "error",
-        duration: 3000,
-        isClosable: true,
-      });
-    }
-
-  };
-
-  const handleDiscussion = async () => {
-
-    if (isAuthenticated) {
-      if (user.id == annonce.auteur_detail.id) {
-        toast({
-          title: "Erreur...",
-          description: `Vous ne pouvez pas demarrer une discussion avec vous même`,
-          status: "error",
-          duration: 5000,
-          isClosable: true,
-          position:"top",
-        })
-
-      }
-      else {
-        try {
-          const response = await axiosInstance.post("/api/discussions/", {
-            createur1: user.id,
-            createur2: annonce.auteur_detail.id,
-          })
-          navigate(`/messages?discussion=${response.data.id}`) // Rediriger vers la zone des messages
-        } catch (err) {
-          navigate("/messages")
-          // toast({
-          //   title: "Erreur",
-          //   description: err.message,
-          //   status: "error",
-          //   duration: 3000,
-          //   isClosable: true,
-          //   position: "top",
-          // })
-        }
-      }
-
     } else {
       toast({
         title: "Erreur",
-        description: "Vous devez vous authentifier avant de pouvoir Envoyez un message",
+        description: "Vous devez vous authentifier avant de pouvoir réaliser cette action",
         status: "error",
         duration: 3000,
         isClosable: true,
       });
     }
+  };
 
-  }
+  const handleDiscussion = async () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Erreur",
+        description: "Vous devez vous authentifier avant de pouvoir envoyer un message",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    if (user.id == annonce.auteur_detail.id) {
+      toast({
+        title: "Erreur...",
+        description: `Vous ne pouvez pas démarrer une discussion avec vous-même`,
+        status: "error",
+        duration: 5000,
+        isClosable: true,
+        position: "top",
+      });
+      return;
+    }
+
+    if (!hasActiveSubscription) {
+      onSubscriptionModalOpen();
+      return;
+    }
+
+    try {
+      const response = await axiosInstance.post("/api/discussions/", {
+        createur1: user.id,
+        createur2: annonce.auteur_detail.id,
+      });
+      navigate(`/messages?discussion=${response.data.id}`);
+    } catch (err) {
+      navigate("/messages");
+    }
+  };
+
+  const handleSubscribe = async (planType) => {
+    try {
+      const paymentRef = `PAY-${Date.now()}`;
+      
+      const response = await axiosInstance.post("/api/subscriptions/subscribe/", {
+        plan_type: planType,
+        payment_reference: paymentRef,
+      });
+      
+      setHasActiveSubscription(true);
+      onSubscriptionModalClose();
+      
+      toast({
+        title: "Abonnement activé!",
+        description: `Votre abonnement ${planType} a été activé avec succès.`,
+        status: "success",
+        duration: 5000,
+        isClosable: true,
+      });
+      
+      // Rediriger vers la discussion après l'abonnement
+      handleDiscussion();
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors de l'abonnement",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
 
   // Gestion des commentaires
   const handleAddComment = async (parentCommentaire = null) => {
@@ -261,13 +294,12 @@ export default function DetailAnnonce() {
     } else {
       toast({
         title: "Erreur",
-        description: "Impossible d'envoyer un commentaire sans etre authentifier",
+        description: "Impossible d'envoyer un commentaire sans être authentifié",
         status: "error",
         duration: 3000,
         isClosable: true,
       });
     }
-
   };
 
   // Gestion des notes
@@ -288,7 +320,6 @@ export default function DetailAnnonce() {
         });
       } catch (err) {
         console.log(err);
-
         toast({
           title: "Erreur",
           description: err.message,
@@ -306,7 +337,6 @@ export default function DetailAnnonce() {
         isClosable: true,
       });
     }
-
   };
 
   // Navigation entre images
@@ -322,7 +352,7 @@ export default function DetailAnnonce() {
 
   if (loading) return <Loading />;
 
-  addView()
+  addView();
 
   return (
     <Box bg={bgColor} minH="100vh" ref={containerRef}>
@@ -378,7 +408,6 @@ export default function DetailAnnonce() {
                 <Heading size={{ base: "md", md: "xl" }} color={primaryTextColor} mb={2}>
                   {annonce.titre}
                 </Heading>
-
               </Flex>
 
               <Heading size="xl" color="primary.500" mb={4}>
@@ -392,8 +421,6 @@ export default function DetailAnnonce() {
                 <Text>{annonce.vues?.length || 0} vues</Text>
               </Flex>
             </Box>
-
-
 
             {/* Description */}
             <Box className="animate-section" mb={8} bg={cardBg} borderRadius="xl" boxShadow="sm" p={6}>
@@ -585,7 +612,7 @@ export default function DetailAnnonce() {
                         colorScheme="primary"
                         leftIcon={<FaEnvelope />}
                         w="full"
-                        onClick={() => handleDiscussion()}
+                        onClick={handleDiscussion}
                       >
                         Envoyer un message
                       </Button>
@@ -598,7 +625,6 @@ export default function DetailAnnonce() {
               <Card className="animate-section" bg={cardBg} boxShadow="sm">
                 <CardBody>
                   <VStack spacing={4}>
-                  
                     <Button
                       variant={isFavorite ? "solid" : "outline"}
                       colorScheme={isFavorite ? "red" : "primary"}
@@ -610,7 +636,6 @@ export default function DetailAnnonce() {
                       {isFavorite ? "Favori" : "Ajouter aux favoris"}
                     </Button>
                     <ShareButton />
-
                   </VStack>
                 </CardBody>
               </Card>
@@ -655,12 +680,77 @@ export default function DetailAnnonce() {
           <ModalBody p={0}>
             <AspectRatio ratio={16 / 9}>
               <Image
-                src={`${annonce.photos[currentImageIndex]?.photo}` || `${baseUrl}${annonce.photos[currentImageIndex]?.photo}` || annonce.photos[currentImageIndex]?.photo }
+                src={`${annonce.photos[currentImageIndex]?.photo}` || `${baseUrl}${annonce.photos[currentImageIndex]?.photo}` || annonce.photos[currentImageIndex]?.photo}
                 alt={`Image ${currentImageIndex + 1}`}
                 objectFit="contain"
               />
             </AspectRatio>
           </ModalBody>
+        </ModalContent>
+      </Modal>
+
+      {/* Modal d'abonnement */}
+      <Modal isOpen={isSubscriptionModalOpen} onClose={onSubscriptionModalClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Abonnement Requis</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Text mb={4}>
+              Pour envoyer des messages aux propriétaires, vous devez souscrire à un abonnement premium.
+            </Text>
+            
+            <VStack spacing={4} align="stretch">
+              <Card 
+                borderWidth="2px" 
+                borderColor="primary.500"
+                _hover={{ transform: "scale(1.02)", shadow: "md" }}
+                transition="all 0.2s"
+                cursor="pointer"
+                onClick={() => handleSubscribe("daily")}
+              >
+                <CardBody>
+                  <Heading size="md">Journalier</Heading>
+                  <Text fontSize="xl" fontWeight="bold" color="primary.500">250 FCFA</Text>
+                  <Text mt={2}>Accès pour 24 heures</Text>
+                </CardBody>
+              </Card>
+              
+              <Card 
+                borderWidth="1px"
+                _hover={{ transform: "scale(1.02)", shadow: "md" }}
+                transition="all 0.2s"
+                cursor="pointer"
+                onClick={() => handleSubscribe("weekly")}
+              >
+                <CardBody>
+                  <Heading size="md">Hebdomadaire</Heading>
+                  <Text fontSize="xl" fontWeight="bold" color="primary.500">500 FCFA</Text>
+                  <Text mt={2}>Accès pour 7 jours</Text>
+                </CardBody>
+              </Card>
+              
+              <Card 
+                borderWidth="1px"
+                _hover={{ transform: "scale(1.02)", shadow: "md" }}
+                transition="all 0.2s"
+                cursor="pointer"
+                onClick={() => handleSubscribe("monthly")}
+              >
+                <CardBody>
+                  <Heading size="md">Mensuel</Heading>
+                  <Text fontSize="xl" fontWeight="bold" color="primary.500">1000 FCFA</Text>
+                  <Text mt={2}>Accès pour 30 jours</Text>
+                </CardBody>
+              </Card>
+            </VStack>
+          </ModalBody>
+          
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onSubscriptionModalClose}>
+              Plus tard
+            </Button>
+          </ModalFooter>
         </ModalContent>
       </Modal>
 

@@ -359,13 +359,48 @@ def update_discussion_unread(sender, instance, created, **kwargs):
 
 
 
-class AnnoncePayment(models.Model):
+class UserSubscription(models.Model):
+    PLAN_CHOICES = (
+        ('daily', 'Journalier - 250 FCFA'),
+        ('weekly', 'Hebdomadaire - 500 FCFA'),
+        ('monthly', 'Mensuel - 1000 FCFA'),
+    )
     
-    """ store payment for annonce """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='subscriptions')
+    plan_type = models.CharField(max_length=10, choices=PLAN_CHOICES)
+    start_date = models.DateTimeField(auto_now_add=True)
+    end_date = models.DateTimeField()
+    is_active = models.BooleanField(default=True)
+    order_id = models.CharField(max_length=100, blank=True, null=True)
     
-    user=models.ForeignKey(User,on_delete=models.CASCADE)
-    annonce=models.ForeignKey(Annonce,on_delete=models.CASCADE)
-    description=models.CharField(max_length=25)
-    order_id=models.CharField(max_length=50)
-    status=models.CharField(max_length=10)
+    class Meta:
+        ordering = ['-start_date']
     
+    def __str__(self):
+        return f"{self.user.email} - {self.get_plan_type_display()} ({'Actif' if self.is_active else 'Inactif'})"
+    
+    def save(self, *args, **kwargs):
+        if not self.pk:  # Nouvel abonnement
+            duration_days = {
+                'daily': 1,
+                'weekly': 7,
+                'monthly': 30
+            }.get(self.plan_type, 0)
+            
+            self.end_date = self.start_date + timezone.timedelta(days=duration_days)
+        super().save(*args, **kwargs)
+    
+    @property
+    def price(self):
+        prices = {
+            'daily': 250,
+            'weekly': 500,
+            'monthly': 1000
+        }
+        return prices.get(self.plan_type, 0)
+    
+    @property
+    def remaining_days(self):
+        if self.is_active:
+            return max(0, (self.end_date - timezone.now()).days)
+        return 0

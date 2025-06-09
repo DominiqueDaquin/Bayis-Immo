@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from authentification.serializers import UserSerializer
-from .models import Media,Annonce,Message,Discussion,AnnonceFavoris,Note,Tombola,Commentaire,Vue,Publicite,UserTombola,DemandeBien,AnnoncePayment,Notification
+from .models import Media,Annonce,Message,Discussion,AnnonceFavoris,Note,Tombola,Commentaire,Vue,Publicite,UserTombola,DemandeBien,UserSubscription,Notification
 from django.contrib.auth import get_user_model
 
 User=get_user_model()
@@ -327,9 +327,27 @@ class DemandeBienSerializer(serializers.ModelSerializer):
     
     
 
-class AnnoncePaymentSerializer(serializers.ModelSerializer):
-    
+class UserSubscriptionSerializer(serializers.ModelSerializer):
+    plan_name = serializers.CharField(source='get_plan_type_display', read_only=True)
+    price = serializers.IntegerField(read_only=True)
+    remaining_days = serializers.IntegerField(read_only=True)
     
     class Meta:
-        fields=['user','annonce','description','order_id','status']
-        read_only_fields=['user','annonce']
+        model = UserSubscription
+        fields = [
+            'id', 'plan_type', 'plan_name', 'price', 'start_date', 
+            'end_date', 'is_active', 'order_id', 'remaining_days'
+        ]
+        read_only_fields = [
+            'id', 'plan_name', 'price', 'start_date', 
+            'end_date', 'is_active', 'remaining_days'
+        ]
+
+class CreateSubscriptionSerializer(serializers.Serializer):
+    plan_type = serializers.ChoiceField(choices=UserSubscription.PLAN_CHOICES)
+    payment_reference = serializers.CharField(max_length=100)
+    
+    def validate_plan_type(self, value):
+        if value not in dict(UserSubscription.PLAN_CHOICES).keys():
+            raise serializers.ValidationError("Type d'abonnement invalide")
+        return value

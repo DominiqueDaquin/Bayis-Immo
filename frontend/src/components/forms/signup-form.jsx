@@ -183,6 +183,35 @@ export const SignupForm = () => {
   const toast = useToast();
   const navigate = useNavigate();
 
+  // Détection automatique du pays de l'utilisateur
+  useEffect(() => {
+    const detectUserCountry = async () => {
+      try {
+        const response = await fetch('https://ipapi.co/json/');
+        const data = await response.json();
+        
+        
+        if (data.country) {
+          const userCountryCode = `${data.country_calling_code}`;
+          const foundCountry = countryCodes.find(
+            country => country.code === userCountryCode
+          );
+         
+          
+          
+          if (foundCountry) {
+            setSelectedCountry(foundCountry);
+          }
+        }
+      } catch (error) {
+        console.error("Erreur lors de la détection du pays:", error);
+        // On garde la valeur par défaut si la détection échoue
+      }
+    };
+    
+    detectUserCountry();
+  }, []);
+
   // Vérification du nom
   useEffect(() => {
     const hasMinimumLetters = (name.match(/[a-zA-Z]/g) || []).length >= 3;
@@ -514,10 +543,14 @@ export const SignupForm = () => {
                 >
                   <Text fontSize="md">{selectedCountry.flag} {selectedCountry.code}</Text>
                 </MenuButton>
-                <MenuList maxH="300px" overflowY="auto">
+                <MenuList 
+                  maxH="300px" 
+                  overflowY="auto"
+                  zIndex="popover"
+                >
                   {countryCodes.map((country) => (
                     <MenuItem 
-                      key={country.code}
+                      key={`${country.code}-${country.name}`}
                       onClick={() => handleCountrySelect(country)}
                     >
                       <Text mr={2}>{country.flag}</Text>
