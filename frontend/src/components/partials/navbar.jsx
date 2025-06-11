@@ -19,7 +19,7 @@ import { HamburgerIcon, CloseIcon } from "@chakra-ui/icons";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useRef } from "react";
-import { FaHome, FaHeart, FaEnvelope, FaBell, FaTrophy, FaChartLine, FaCog } from "react-icons/fa";
+import { FaHome, FaHeart, FaEnvelope, FaBell, FaTrophy, FaChartLine, FaCog,FaAddressBook } from "react-icons/fa";
 import { gsap } from "gsap";
 import logoText from "@/assets/logo-texte.png";
 
@@ -49,6 +49,7 @@ export default function SimpleNavbar() {
   const commonLinks = [
     { label: "Accueil", href: "/annonce", icon: <FaHome /> },
     { label: "Cagnotte", href: "/tombolas", icon: <FaTrophy /> },
+    { label: "Demandes", href: "/demandes",  icon: <FaAddressBook /> },
   ];
 
   const normalUserLinks = [
@@ -56,6 +57,7 @@ export default function SimpleNavbar() {
     { label: "Messages", href: "/messages", icon: <FaEnvelope /> },
     { label: "Notifications", href: "/notifications", icon: <FaBell /> },
     { label: "Paramètres", href: "/parametres", icon: <FaCog /> },
+    
   ];
 
   const annonceurLinks = [

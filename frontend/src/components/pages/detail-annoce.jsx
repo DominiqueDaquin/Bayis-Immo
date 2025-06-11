@@ -35,11 +35,11 @@ import {
   ModalFooter,
   useBreakpointValue,
   Flex,
-  Popover, 
-  PopoverTrigger, 
-  PopoverContent, 
-  PopoverArrow, 
-  PopoverCloseButton, 
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverArrow,
+  PopoverCloseButton,
   PopoverBody
 } from "@chakra-ui/react";
 import { FaHeart, FaRegHeart, FaEllipsisH, FaThumbsUp, FaReply, FaStar, FaShare, FaPhone, FaMapMarkerAlt, FaBed, FaBath, FaRulerCombined, FaEnvelope, FaEye } from "react-icons/fa";
@@ -120,7 +120,7 @@ export default function DetailAnnonce() {
         setIsFavorite(favorisResponse.data.is_favoris);
         setUserRating(noteResponse.data?.user_note || 0);
         setHasActiveSubscription(subscriptionResponse.data?.is_active || false);
-        
+
         setLoading(false);
       } catch (err) {
         console.log(err);
@@ -238,15 +238,15 @@ export default function DetailAnnonce() {
   const handleSubscribe = async (planType) => {
     try {
       const paymentRef = `PAY-${Date.now()}`;
-      
+
       const response = await axiosInstance.post("/api/subscriptions/subscribe/", {
         plan_type: planType,
         payment_reference: paymentRef,
       });
-      
+
       setHasActiveSubscription(true);
       onSubscriptionModalClose();
-      
+
       toast({
         title: "Abonnement activé!",
         description: `Votre abonnement ${planType} a été activé avec succès.`,
@@ -254,7 +254,7 @@ export default function DetailAnnonce() {
         duration: 5000,
         isClosable: true,
       });
-      
+
       // Rediriger vers la discussion après l'abonnement
       handleDiscussion();
     } catch (error) {
@@ -589,24 +589,29 @@ export default function DetailAnnonce() {
                     </Flex>
 
                     <VStack spacing={3} mt={4}>
-                      <Popover>
-                        <PopoverTrigger>
-                          <Button
-                            colorScheme="primary"
-                            leftIcon={<FaEye />}
-                            w="full"
-                          >
-                            Voir le numéro
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent>
-                          <PopoverArrow />
-                          <PopoverCloseButton />
-                          <PopoverBody>
-                            {annonce.auteur_detail.phone}
-                          </PopoverBody>
-                        </PopoverContent>
-                      </Popover>
+                      {hasActiveSubscription && (
+                        <Popover>
+                          <PopoverTrigger>
+                            <Button
+                              colorScheme="primary"
+                              leftIcon={<FaEye />}
+                              w="full"
+                            >
+                              Voir le numéro
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent>
+                            <PopoverArrow />
+                            <PopoverCloseButton />
+                            <PopoverBody>
+                              {annonce.auteur_detail.phone}
+                            </PopoverBody>
+                          </PopoverContent>
+                        </Popover>
+                      )}
+
+
+
                       <Button
                         variant="outline"
                         colorScheme="primary"
@@ -699,10 +704,10 @@ export default function DetailAnnonce() {
             <Text mb={4}>
               Pour envoyer des messages aux propriétaires, vous devez souscrire à un abonnement premium.
             </Text>
-            
+
             <VStack spacing={4} align="stretch">
-              <Card 
-                borderWidth="2px" 
+              <Card
+                borderWidth="2px"
                 borderColor="primary.500"
                 _hover={{ transform: "scale(1.02)", shadow: "md" }}
                 transition="all 0.2s"
@@ -715,8 +720,8 @@ export default function DetailAnnonce() {
                   <Text mt={2}>Accès pour 24 heures</Text>
                 </CardBody>
               </Card>
-              
-              <Card 
+
+              <Card
                 borderWidth="1px"
                 _hover={{ transform: "scale(1.02)", shadow: "md" }}
                 transition="all 0.2s"
@@ -729,8 +734,8 @@ export default function DetailAnnonce() {
                   <Text mt={2}>Accès pour 7 jours</Text>
                 </CardBody>
               </Card>
-              
-              <Card 
+
+              <Card
                 borderWidth="1px"
                 _hover={{ transform: "scale(1.02)", shadow: "md" }}
                 transition="all 0.2s"
@@ -745,7 +750,7 @@ export default function DetailAnnonce() {
               </Card>
             </VStack>
           </ModalBody>
-          
+
           <ModalFooter>
             <Button variant="ghost" mr={3} onClick={onSubscriptionModalClose}>
               Plus tard
