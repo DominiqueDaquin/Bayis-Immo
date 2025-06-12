@@ -221,7 +221,7 @@ REST_FRAMEWORK={
 if DEBUG:
     SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = 'http://localhost:8000/complete/google-oauth2/'
 else:
-    SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = 'http://bayisimmob.com/complete/google-oauth2/'
+    SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = 'https://bayisimmob.com/complete/google-oauth2/'
 
 DJOSER={
     'LOGIN_FIELD':'email',
