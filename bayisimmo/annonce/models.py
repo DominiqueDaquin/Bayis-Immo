@@ -372,7 +372,8 @@ class UserSubscription(models.Model):
     end_date = models.DateTimeField()
     is_active = models.BooleanField(default=True)
     order_id = models.CharField(max_length=100, blank=True, null=True)
-    
+    payment_reference = models.CharField(max_length=255, blank=True, null=True)
+    status=models.CharField(max_length=20,default='en attente')
     class Meta:
         ordering = ['-start_date']
     
@@ -380,14 +381,19 @@ class UserSubscription(models.Model):
         return f"{self.user.email} - {self.get_plan_type_display()} ({'Actif' if self.is_active else 'Inactif'})"
     
     def save(self, *args, **kwargs):
-        if not self.pk:  # Nouvel abonnement
+        if not self.pk:  
+            if not self.start_date:
+                self.start_date = timezone.now()
+
+            # Durée en jours selon le type de plan
             duration_days = {
                 'daily': 1,
                 'weekly': 7,
                 'monthly': 30
             }.get(self.plan_type, 0)
-            
+
             self.end_date = self.start_date + timezone.timedelta(days=duration_days)
+
         super().save(*args, **kwargs)
     
     @property

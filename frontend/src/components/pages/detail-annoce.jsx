@@ -52,6 +52,8 @@ import { baseUrl } from "@/config";
 import { gsap } from "gsap";
 import Footer from "../partials/footer";
 import ShareButton from "./partials/share";
+import { baseUrlFrontend } from "@/config";
+import { v4 as uuidv4 } from "uuid";
 
 export default function DetailAnnonce() {
   const { id } = useParams();
@@ -83,6 +85,38 @@ export default function DetailAnnonce() {
   const accentColor = useColorModeValue("accent.500", "accent.300");
   const hoverBg = useColorModeValue("primary.50", "primary.900");
 
+  const statusPaiement=async(pay)=>{
+    try{
+      console.log('inside');
+      
+      const verifyResponse=await axiosInstance.get('/api/subscriptions/verify/')
+      console.log('verification',verifyResponse);
+      
+
+      const response= await axiosInstance.post("/api/paiement/lygos/status/",{
+      order_id:verifyResponse.data.order_id
+      
+    })
+    const status=response.data.status
+    console.log('votre status',status);
+    
+    const responsePub=await axiosInstance.patch(`/api/subscriptions/${verifyResponse.data.id}/`,{
+      status:status
+    })
+    // console.log(responsePub);
+    
+    // console.log(response);
+    }catch(err){
+        console.log("erreur de status",err);
+
+    }
+    
+    
+    
+    
+  }
+
+
   // Animations GSAP
   useEffect(() => {
     if (!loading) {
@@ -112,26 +146,22 @@ export default function DetailAnnonce() {
           axiosInstance.get(`/api/annonces/${id}/commentaires`),
           axiosInstance.get(`/api/annonces/${id}/is-favoris/`),
           axiosInstance.get(`/api/annonces/${id}/note`),
-          // isAuthenticated ? axiosInstance.get("/api/subscriptions/current/") : Promise.resolve({ data: { is_active: false } })
+          
+          isAuthenticated && axiosInstance.get("/api/subscriptions/current/") 
         ]);
 
+       
+        statusPaiement()
         setAnnonce(annonceResponse.data);
         setComments(commentsResponse.data);
         setIsFavorite(favorisResponse.data.is_favoris);
         setUserRating(noteResponse.data?.user_note || 0);
-        setHasActiveSubscription(subscriptionResponse.data?.is_active || false);
-
+        setHasActiveSubscription((subscriptionResponse.data?.is_active && subscriptionResponse.data?.status=='completed') || false);
+        
+        
         setLoading(false);
       } catch (err) {
         console.log(err);
-        toast({
-          title: "Erreur",
-          description: err.message,
-          status: "error",
-          duration: 3000,
-          isClosable: true,
-          position: "top",
-        });
         setLoading(false);
       }
     };
@@ -147,7 +177,7 @@ export default function DetailAnnonce() {
           user: user.id,
         });
       } catch (err) {
-        console.error("Error adding view:", err);
+        
       }
     }
   };
@@ -238,13 +268,16 @@ export default function DetailAnnonce() {
   const handleSubscribe = async (planType) => {
     try {
       const paymentRef = `PAY-${Date.now()}`;
+      const order_id = uuidv4();
+      console.log('paiement reference:', paymentRef);
 
       const response = await axiosInstance.post("/api/subscriptions/subscribe/", {
         plan_type: planType,
         payment_reference: paymentRef,
+        order_id:order_id,
       });
 
-      setHasActiveSubscription(true);
+      //setHasActiveSubscription(true);
       onSubscriptionModalClose();
 
       toast({
@@ -254,13 +287,61 @@ export default function DetailAnnonce() {
         duration: 5000,
         isClosable: true,
       });
+      console.log('hello')
+      
+      const link = `${baseUrlFrontend}/merci`;
+      const linkechec = `${baseUrlFrontend}/echec`;
+      const montant = planType === 'daily'
+        ? 250
+        : planType === 'weekly'
+          ? 500
+          : planType === 'monthly'
+            ? 1000
+            : 0;
+
+      console.log('montant:',montant);
+      
+      if (response.status == 200 || response.status == 201) {
+        const config = {
+          timeout: 30000, // 30 secondes
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        };
+
+        const payresponse = await axiosInstance.post(
+          "/api/paiement/lygos/",
+          {
+            amount: montant,
+            shop_name: "Bayis Immob",
+            message: `Paiement pour votre abonnement`,
+            order_id: order_id,
+            success_url: link,
+            failure_url: linkechec
+          },
+          config
+        );
+        if (payresponse.status == 200) {
+          window.open(payresponse.data.link, '_blank')
+          const responseTmp = await axiosInstance.post(`/api/subscriptions/${response.data.id}/`, {
+            order_id: order_id
+          });
+
+        }
+
+      }
+
+
 
       // Rediriger vers la discussion après l'abonnement
       handleDiscussion();
+
+
+
     } catch (error) {
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue lors de l'abonnement",
+        description: `Une erreur est survenue lors de l'abonnement`,
         status: "error",
         duration: 3000,
         isClosable: true,
@@ -320,13 +401,7 @@ export default function DetailAnnonce() {
         });
       } catch (err) {
         console.log(err);
-        toast({
-          title: "Erreur",
-          description: err.message,
-          status: "error",
-          duration: 3000,
-          isClosable: true,
-        });
+        
       }
     } else {
       toast({

@@ -331,12 +331,12 @@ class UserSubscriptionSerializer(serializers.ModelSerializer):
     plan_name = serializers.CharField(source='get_plan_type_display', read_only=True)
     price = serializers.IntegerField(read_only=True)
     remaining_days = serializers.IntegerField(read_only=True)
-    
+    payment_reference = serializers.CharField(max_length=100)
     class Meta:
         model = UserSubscription
         fields = [
             'id', 'plan_type', 'plan_name', 'price', 'start_date', 
-            'end_date', 'is_active', 'order_id', 'remaining_days'
+            'end_date', 'is_active', 'order_id', 'remaining_days','payment_reference','status'
         ]
         read_only_fields = [
             'id', 'plan_name', 'price', 'start_date', 

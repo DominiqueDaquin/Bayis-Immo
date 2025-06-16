@@ -896,9 +896,9 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
         return UserSubscription.objects.filter(user=self.request.user).order_by('-start_date')
 
 
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=['post','get'])
     def subscribe(self, request):
-        serializer = CreateSubscriptionSerializer(data=request.data)
+        serializer = UserSubscriptionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
         # Désactiver les abonnements existants
@@ -909,14 +909,21 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
             user=request.user,
             plan_type=serializer.validated_data['plan_type'],
             payment_reference=serializer.validated_data['payment_reference'],
-            is_active=True
+            is_active=True,
+            order_id=serializer.validated_data['order_id'],
         )
         
         return Response(
             UserSubscriptionSerializer(subscription, context={'request': request}).data,
             status=status.HTTP_201_CREATED
         )
+    
 
+
+    @action(detail=False, methods=['post','get'])
+    def verify(self,request):
+        user_subscription=UserSubscription.objects.filter(user=request.user, is_active=True)
+        return Response({'order_id':user_subscription[0].order_id,'id':user_subscription[0].id})
 
 
     @action(detail=False, methods=['get'])
@@ -930,7 +937,8 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
         
         serializer = self.get_serializer(subscription)
         return Response(serializer.data)
-    
+
+
     @action(detail=False, methods=['get'])
     def plans(self, request):
         plans = [
