@@ -60,8 +60,8 @@ INSTALLED_APPS = [
     #pour s3
     "storages",
     'oauth2_provider',
-    'social_django', 
-    'rest_framework_social_oauth2',  
+    # 'social_django', 
+    # 'rest_framework_social_oauth2',  
     
 ]
 
@@ -98,8 +98,8 @@ TEMPLATES = [
 ]
 
 AUTHENTICATION_BACKENDS = (
-    'social_core.backends.google.GoogleOAuth2', 
-    'rest_framework_social_oauth2.backends.DjangoOAuth2',
+    #'social_core.backends.google.GoogleOAuth2', 
+    #'rest_framework_social_oauth2.backends.DjangoOAuth2',
     'django.contrib.auth.backends.ModelBackend',  
     
 )
@@ -224,9 +224,12 @@ if DEBUG:
 else:
     SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = 'https://bayisimmob.com/auth/o/google-oauth2/'
 
-
+print(SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI) 
 
 DJOSER={
+    'SOCIAL_AUTH_ALLOWED_REDIRECT_URIS': [
+        SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI
+    ],
     'LOGIN_FIELD':'email',
     'SERIALIZERS': {
         'user_create': 'authentification.serializers.UserRegistrationSerializer',
@@ -243,10 +246,7 @@ DJOSER={
     },
     # 'SOCIAL_AUTH_ALLOWED_REDIRECT_URIS': ['https://bayisimmob.com','http://localhost:5173','https://bayisimmob.com/complete/google-oauth2/'],
     
-    'SOCIAL_AUTH_ALLOWED_REDIRECT_URIS': [
-        "http://localhost:8000/auth/o/google-oauth2/",  # Dev
-        "https://bayisimmob.com/auth/o/google-oauth2/"  # Prod
-    ],
+
     'SOCIAL_AUTH_TOKEN_STRATEGY': 'djoser.social.token.jwt.TokenStrategy',
 }
 
