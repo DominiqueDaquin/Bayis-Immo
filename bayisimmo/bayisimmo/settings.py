@@ -101,6 +101,7 @@ AUTHENTICATION_BACKENDS = (
     'social_core.backends.google.GoogleOAuth2', 
     'rest_framework_social_oauth2.backends.DjangoOAuth2',
     'django.contrib.auth.backends.ModelBackend',  
+    
 )
 
 DRFSO2_URL_NAMESPACE = 'oauth2_provider'
@@ -219,9 +220,11 @@ REST_FRAMEWORK={
 }
 
 if DEBUG:
-    SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = 'http://localhost:8000/complete/google-oauth2/'
+    SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = 'http://localhost:8000/auth/o/google-oauth2/'
 else:
-    SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = 'https://bayisimmob.com/complete/google-oauth2/'
+    SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = 'https://bayisimmob.com/auth/o/google-oauth2/'
+
+
 
 DJOSER={
     'LOGIN_FIELD':'email',
@@ -235,10 +238,16 @@ DJOSER={
     'ACTIVATION_URL': 'activate/{uid}/{token}',
     'DOMAIN': os.getenv("DOMAIN","bayisimmob.com"),
     'PERMISSIONS': {
-        'user_list': ['rest_framework.permissions.IsAdminUser'],  # Modifier si nécessaire
+        'user_list': ['rest_framework.permissions.IsAdminUser'],  
         'user': ['rest_framework.permissions.IsAuthenticated'],
     },
-    'SOCIAL_AUTH_ALLOWED_REDIRECT_URIS': ['http://localhost:5173','https://bayisimmob.com'],
+    # 'SOCIAL_AUTH_ALLOWED_REDIRECT_URIS': ['https://bayisimmob.com','http://localhost:5173','https://bayisimmob.com/complete/google-oauth2/'],
+    
+    'SOCIAL_AUTH_ALLOWED_REDIRECT_URIS': [
+        "http://localhost:8000/auth/o/google-oauth2/",  # Dev
+        "https://bayisimmob.com/auth/o/google-oauth2/"  # Prod
+    ],
+    'SOCIAL_AUTH_TOKEN_STRATEGY': 'djoser.social.token.jwt.TokenStrategy',
 }
 
 SIMPLE_JWT={
